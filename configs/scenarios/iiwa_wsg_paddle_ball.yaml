@@ -1,0 +1,45 @@
+directives:
+  - add_model:
+      name: iiwa
+      file: package://drake_models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
+  - add_weld:
+      parent: world
+      child: iiwa::base
+      X_PC:
+        translation: [0, 0, 0]
+        rotation: !Rpy [0, 0, 0]
+  - add_model:
+      name: wsg
+      file: package://drake_models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+  - add_weld:
+      parent: iiwa::iiwa_link_7
+      child: wsg::body
+      X_PC:
+        translation: [0, 0, 0.114]
+        rotation: !Rpy [90, 0, 90]
+  - add_model:
+      name: paddle
+      file: file://{{REPO_ROOT}}/models/paddle/paddle.urdf
+  - add_weld:
+      parent: wsg::body
+      child: paddle::paddle_link
+      X_PC:
+        translation: [0.0, 0.028, -0.19]
+        rotation: !Rpy [0, 90, 0]
+  - add_model:
+      name: ball
+      file: file://{{REPO_ROOT}}/models/ball/ball.sdf
+      default_free_body_pose:
+        base_frame: world
+        translation: [0.6, 0.0, 0.4]
+        rotation: !Rpy [0, 0, 0]
+
+model_drivers:
+  iiwa: !IiwaDriver {}
+  wsg: !SchunkWsgDriver {}
+
+plant_config:
+  time_step: 0.001
+
+simulator_config:
+  target_realtime_rate: 1.0
