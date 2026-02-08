@@ -7,8 +7,9 @@ from pydrake.all import DiagramBuilder, Simulator, StartMeshcat
 from pydrake.lcm import DrakeLcm
 
 from src.controllers.baseline_controller import BaselineController
-from src.station import make_station
+from src.station import get_iiwa_default_joint_positions, make_station
 from src.utils.paths import scenario_path
+from src.utils.wsg import maybe_connect_wsg_hold
 
 
 def build_diagram(scenario_yaml: str, meshcat: bool, lcm=None):
@@ -18,7 +19,8 @@ def build_diagram(scenario_yaml: str, meshcat: bool, lcm=None):
     station = builder.AddSystem(
         make_station(scenario_yaml, meshcat=meshcat_instance, lcm=lcm)
     )
-    controller = builder.AddSystem(BaselineController())
+    q0 = get_iiwa_default_joint_positions(scenario_yaml)
+    controller = builder.AddSystem(BaselineController(q0=q0))
 
     builder.Connect(
         station.GetOutputPort("iiwa.state_estimated"), controller.get_input_port(0)
@@ -26,6 +28,7 @@ def build_diagram(scenario_yaml: str, meshcat: bool, lcm=None):
     builder.Connect(
         controller.get_output_port(0), station.GetInputPort("iiwa.position")
     )
+    maybe_connect_wsg_hold(builder, station)
 
     diagram = builder.Build()
     simulator = Simulator(diagram)

@@ -258,6 +258,41 @@ def _parse_directives_yaml(path: str):
     return directives, plant_config
 
 
+def _coerce_scalar(value):
+    if isinstance(value, (list, tuple)):
+        if len(value) != 1:
+            raise ValueError(f"Expected scalar or single-element list, got: {value}")
+        value = value[0]
+    return float(value)
+
+
+def _iiwa_default_positions_from_mapping(mapping):
+    if not mapping:
+        return None
+    values = []
+    for i in range(1, 8):
+        key = f"iiwa_joint_{i}"
+        if key not in mapping:
+            return None
+        values.append(_coerce_scalar(mapping[key]))
+    return np.asarray(values, dtype=float)
+
+
+def get_iiwa_default_joint_positions(scenario_yaml: str):
+    """Return iiwa default joint positions from a scenario YAML, if present."""
+    directives, _ = _parse_directives_yaml(scenario_yaml)
+    for directive in directives:
+        add_model = directive.get("add_model")
+        if not add_model:
+            continue
+        if add_model.get("name") != "iiwa":
+            continue
+        return _iiwa_default_positions_from_mapping(
+            add_model.get("default_joint_positions")
+        )
+    return None
+
+
 def _make_station_fallback(scenario_yaml: str, meshcat=None, lcm=None):
     directives, plant_config = _parse_directives_yaml(scenario_yaml)
     time_step = float(plant_config.get("time_step", 0.001))
@@ -269,6 +304,7 @@ def _make_station_fallback(scenario_yaml: str, meshcat=None, lcm=None):
 
     model_instances = {}
     pending_welds = []
+    pending_joint_positions = []
 
     for directive in directives:
         if "add_model" in directive:
@@ -289,6 +325,14 @@ def _make_station_fallback(scenario_yaml: str, meshcat=None, lcm=None):
                     plant, model_instances[name], model_name=name
                 )
                 plant.SetDefaultFreeBodyPose(body, X_WB)
+            if "default_joint_positions" in add_model:
+                pending_joint_positions.append(
+                    {
+                        "model_instance": model_instances[name],
+                        "model_name": name,
+                        "positions": add_model["default_joint_positions"],
+                    }
+                )
         elif "add_weld" in directive:
             pending_welds.append(directive["add_weld"])
 
@@ -299,6 +343,14 @@ def _make_station_fallback(scenario_yaml: str, meshcat=None, lcm=None):
         plant.WeldFrames(parent_frame, child_frame, X_PC)
 
     plant.Finalize()
+
+    for entry in pending_joint_positions:
+        if entry["model_name"] != "iiwa":
+            continue
+        q0 = _iiwa_default_positions_from_mapping(entry["positions"])
+        if q0 is None:
+            continue
+        plant.SetDefaultPositions(entry["model_instance"], q0)
 
     iiwa_instance = plant.GetModelInstanceByName("iiwa")
     wsg_instance = None

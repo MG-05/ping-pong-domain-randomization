@@ -8,9 +8,9 @@
     </inertial>
 
     <visual name="paddle_visual">
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="-0.1 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.175" length="0.01"/>
+        <cylinder radius="0.1" length="0.01"/>
       </geometry>
       <material name="paddle_orange">
         <color rgba="1 0.423529 0.039216 1"/>
@@ -20,7 +20,7 @@
     <visual name="handle_visual">
       <origin xyz="-0.19 0 0" rpy="0 1.5708 0"/>
       <geometry>
-        <box size="0.009 0.075 0.05"/>
+        <box size="0.009 0.035 0.15"/>
       </geometry>
       <material name="handle_gray">
         <color rgba="0.4 0.4 0.4 1"/>

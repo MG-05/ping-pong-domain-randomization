@@ -2,9 +2,27 @@ directives:
   - add_model:
       name: iiwa
       file: package://drake_models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
+#      q_start
+      default_joint_positions:
+        iiwa_joint_1: [ -0.2 ]
+        iiwa_joint_2: [ 0.79 ]
+        iiwa_joint_3: [ 0.32 ]
+        iiwa_joint_4: [ -1.76 ]
+        iiwa_joint_5: [ -0.36 ]
+        iiwa_joint_6: [ -0.95 ]
+        iiwa_joint_7: [ 1.63 ]
   - add_weld:
       parent: world
       child: iiwa::base
+      X_PC:
+        translation: [0, 0, 0]
+        rotation: !Rpy [0, 0, 0]
+  - add_model:
+      name: floor
+      file: file://{{REPO_ROOT}}/models/floor/floor.urdf
+  - add_weld:
+      parent: world
+      child: floor::floor_link
       X_PC:
         translation: [0, 0, 0]
         rotation: !Rpy [0, 0, 0]
@@ -15,7 +33,7 @@ directives:
       parent: iiwa::iiwa_link_7
       child: wsg::body
       X_PC:
-        translation: [0, 0, 0.114]
+        translation: [0, 0, 0.104]
         rotation: !Rpy [90, 0, 90]
   - add_model:
       name: paddle
@@ -24,14 +42,14 @@ directives:
       parent: wsg::body
       child: paddle::paddle_link
       X_PC:
-        translation: [0.0, 0.028, -0.19]
+        translation: [0.0, 0.078, -0.23]
         rotation: !Rpy [0, 90, 0]
   - add_model:
       name: ball
       file: file://{{REPO_ROOT}}/models/ball/ball.sdf
       default_free_body_pose:
         base_frame: world
-        translation: [0.6, 0.0, 0.4]
+        translation: [0.77, -0.03, 0.7]
         rotation: !Rpy [0, 0, 0]
 
 model_drivers:

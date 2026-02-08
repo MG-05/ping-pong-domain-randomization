@@ -9,6 +9,7 @@ except ImportError:  # pragma: no cover - fallback for older Drake layouts
 from src.station import make_station
 from src.utils import randomization
 from src.utils.paths import scenario_path
+from src.utils.wsg import maybe_connect_wsg_hold
 
 DEFAULT_TIME_STEP = 0.01
 
@@ -16,6 +17,7 @@ DEFAULT_TIME_STEP = 0.01
 def _build_simulator(scenario_yaml: str):
     builder = DiagramBuilder()
     station = builder.AddSystem(make_station(scenario_yaml, meshcat=None, lcm=None))
+    maybe_connect_wsg_hold(builder, station)
 
     action_port = builder.ExportInput(
         station.GetInputPort("iiwa.position"), "iiwa_position_command"
