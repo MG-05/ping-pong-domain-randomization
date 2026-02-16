@@ -7,12 +7,32 @@ from pydrake.all import DiagramBuilder, Simulator, StartMeshcat
 from pydrake.lcm import DrakeLcm
 
 from src.controllers.baseline_controller import BaselineController
+from src.controllers.fsm_controller import FSMController
 from src.station import get_iiwa_default_joint_positions, make_station
 from src.utils.paths import scenario_path
 from src.utils.wsg import maybe_connect_wsg_hold
 
 
-def build_diagram(scenario_yaml: str, meshcat: bool, lcm=None):
+def _connect_optional_ball_ports(builder, station, controller) -> None:
+    if hasattr(controller, "get_ball_input_port"):
+        try:
+            ball_state_port = station.GetOutputPort("ball.state_estimated")
+            builder.Connect(ball_state_port, controller.get_ball_input_port())
+        except Exception:
+            pass
+    if hasattr(controller, "get_ball_contact_force_input_port"):
+        try:
+            contact_force_port = station.GetOutputPort("ball.contact_forces")
+            builder.Connect(
+                contact_force_port, controller.get_ball_contact_force_input_port()
+            )
+        except Exception:
+            pass
+
+
+def build_diagram(
+    scenario_yaml: str, meshcat: bool, lcm=None, controller_type: str = "fsm"
+):
     builder = DiagramBuilder()
     meshcat_instance = StartMeshcat() if meshcat else None
 
@@ -20,11 +40,20 @@ def build_diagram(scenario_yaml: str, meshcat: bool, lcm=None):
         make_station(scenario_yaml, meshcat=meshcat_instance, lcm=lcm)
     )
     q0 = get_iiwa_default_joint_positions(scenario_yaml)
-    controller = builder.AddSystem(BaselineController(q0=q0))
+    if controller_type == "baseline":
+        controller = builder.AddSystem(BaselineController(q0=q0))
+    elif controller_type == "fsm":
+        controller = builder.AddSystem(FSMController(q0=q0, scenario_yaml=scenario_yaml))
+    else:
+        raise ValueError(
+            f"Unknown controller type: {controller_type}. "
+            "Expected one of: baseline, fsm."
+        )
 
     builder.Connect(
         station.GetOutputPort("iiwa.state_estimated"), controller.get_input_port(0)
     )
+    _connect_optional_ball_ports(builder=builder, station=station, controller=controller)
     builder.Connect(
         controller.get_output_port(0), station.GetInputPort("iiwa.position")
     )
@@ -45,6 +74,12 @@ def main() -> int:
     parser.add_argument("--meshcat", action="store_true", help="Enable Meshcat.")
     parser.add_argument("--duration", type=float, default=10.0)
     parser.add_argument("--realtime", action="store_true")
+    parser.add_argument(
+        "--controller",
+        choices=("fsm", "baseline"),
+        default="fsm",
+        help="Controller to run.",
+    )
     parser.add_argument(
         "--no-lcm", action="store_true", help="Disable LCM status publishers."
     )
@@ -67,7 +102,7 @@ def main() -> int:
         except Exception as exc:
             print(f"LCM unavailable ({exc}); continuing without LCM.")
     _, simulator, station, meshcat_instance = build_diagram(
-        args.scenario, args.meshcat, lcm=lcm
+        args.scenario, args.meshcat, lcm=lcm, controller_type=args.controller
     )
 
     record = args.meshcat and not args.no_record

@@ -216,13 +216,23 @@ def _add_lcm_publishers(
 class IiwaPositionPDCtrl(LeafSystem):
     """Simple PD controller to drive iiwa positions via joint torques."""
 
-    def __init__(self, plant, iiwa_instance, num_joints, kp=100.0, kd=10.0):
+    def __init__(
+        self,
+        plant,
+        iiwa_instance,
+        num_joints,
+        kp=10000.0,
+        kd=100.0,
+        use_gravity_compensation: bool = True,
+    ):
         super().__init__()
         self._plant = plant
         self._iiwa_instance = iiwa_instance
         self._num_joints = num_joints
         self._kp = np.full(num_joints, kp, dtype=float)
         self._kd = np.full(num_joints, kd, dtype=float)
+        self._use_gravity_compensation = bool(use_gravity_compensation)
+        self._plant_context = self._plant.CreateDefaultContext()
 
         self.DeclareVectorInputPort("iiwa_position", BasicVector(num_joints))
         self.DeclareVectorInputPort("iiwa_state", BasicVector(num_joints * 2))
@@ -236,6 +246,20 @@ class IiwaPositionPDCtrl(LeafSystem):
         q = x[: self._num_joints]
         v = x[self._num_joints :]
         tau = self._kp * (q_des - q) - self._kd * v
+
+        if self._use_gravity_compensation:
+            x_iiwa = np.hstack([q, v])
+            self._plant.SetPositionsAndVelocities(
+                self._plant_context, self._iiwa_instance, x_iiwa
+            )
+            gravity_generalized = self._plant.CalcGravityGeneralizedForces(
+                self._plant_context
+            )
+            gravity_iiwa = self._plant.GetVelocitiesFromArray(
+                self._iiwa_instance, gravity_generalized
+            )
+            # Cancel generalized gravity forces with joint torques.
+            tau -= gravity_iiwa
 
         u = np.zeros(self._plant.num_actuators(), dtype=float)
         self._plant.SetActuationInArray(self._iiwa_instance, tau, u)
@@ -373,6 +397,15 @@ def _make_station_fallback(scenario_yaml: str, meshcat=None, lcm=None):
     builder.ExportOutput(
         plant.get_state_output_port(iiwa_instance), "iiwa.state_estimated"
     )
+    if plant.HasModelInstanceNamed("ball"):
+        ball_instance = plant.GetModelInstanceByName("ball")
+        builder.ExportOutput(
+            plant.get_state_output_port(ball_instance), "ball.state_estimated"
+        )
+        builder.ExportOutput(
+            plant.get_generalized_contact_forces_output_port(ball_instance),
+            "ball.contact_forces",
+        )
 
     if meshcat is not None:
         visualizer = MeshcatVisualizer.AddToBuilder(builder, scene_graph, meshcat)
@@ -429,5 +462,19 @@ def get_iiwa_state_port(station):
 
 
 def get_ball_pose_port(station):
-    # TODO: expose a ball pose output port via a custom subsystem.
-    return None
+    # Backward-compatible helper; currently returns ball free-body state.
+    return get_ball_state_port(station)
+
+
+def get_ball_state_port(station):
+    try:
+        return station.GetOutputPort("ball.state_estimated")
+    except Exception:
+        return None
+
+
+def get_ball_contact_force_port(station):
+    try:
+        return station.GetOutputPort("ball.contact_forces")
+    except Exception:
+        return None

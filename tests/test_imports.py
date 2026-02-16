@@ -4,6 +4,7 @@ MODULES = [
     "src.main_sim",
     "src.station",
     "src.controllers.baseline_controller",
+    "src.controllers.fsm_controller",
     "src.envs.drake_gym_env",
     "src.train_rl",
     "src.utils.paths",
