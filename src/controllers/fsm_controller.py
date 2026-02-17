@@ -64,8 +64,8 @@ class FsmTimingConfig:
     normal_tilt_max_deg: float = 18.0
     position_tolerance_m: float = 0.012
     position_tolerance_relaxed_m: float = 0.022
-    orientation_tolerance_deg: float = 12.0
-    orientation_tolerance_relaxed_deg: float = 24.0
+    orientation_tolerance_deg: float = 1.0
+    orientation_tolerance_relaxed_deg: float = 2.0
     hit_contact_force_threshold: float = 0.05
     ik_seed_window_rad: float = 0.65
 
