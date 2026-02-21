@@ -138,9 +138,13 @@ def _configure_package_map(parser: Parser) -> None:
     if package_map.Contains("drake_models"):
         return
     models_root = _find_drake_models_path()
-    if models_root is None:
+    if models_root is not None:
+        package_map.Add("drake_models", str(models_root))
         return
-    package_map.Add("drake_models", str(models_root))
+    try:
+        package_map.PopulateFromRosPackagePath()
+    except Exception:
+        pass
 
 
 def _resolve_model_path(path: str) -> str:
@@ -150,9 +154,9 @@ def _resolve_model_path(path: str) -> str:
         package_name, rel_path = path[len("package://") :].split("/", 1)
         if package_name == "drake_models":
             models_root = _find_drake_models_path()
-            if models_root is None:
-                raise FileNotFoundError("Could not locate drake_models resources.")
-            return str(models_root / rel_path)
+            if models_root is not None:
+                return str(models_root / rel_path)
+        return None  # signal to use Parser's package resolution
     return path
 
 
@@ -334,8 +338,18 @@ def _make_station_fallback(scenario_yaml: str, meshcat=None, lcm=None):
         if "add_model" in directive:
             add_model = directive["add_model"]
             name = add_model["name"]
-            file = _resolve_model_path(add_model["file"])
-            model_instances[name] = parser.AddModelFromFile(file, name)
+            url = add_model["file"]
+            resolved = _resolve_model_path(url)
+            if resolved is not None:
+                file_url = "file://" + resolved if not resolved.startswith("file://") else resolved
+                instances = parser.AddModelsFromUrl(url=file_url)
+            else:
+                instances = parser.AddModelsFromUrl(url=url)
+            instance = instances[0]
+            actual_name = plant.GetModelInstanceName(instance)
+            if actual_name != name:
+                plant.RenameModelInstance(instance, name)
+            model_instances[name] = instance
 
             if "default_free_body_pose" in add_model:
                 pose = add_model["default_free_body_pose"]
@@ -348,7 +362,10 @@ def _make_station_fallback(scenario_yaml: str, meshcat=None, lcm=None):
                 body = _default_body_for_instance(
                     plant, model_instances[name], model_name=name
                 )
-                plant.SetDefaultFreeBodyPose(body, X_WB)
+                if hasattr(plant, "SetDefaultFloatingBaseBodyPose"):
+                    plant.SetDefaultFloatingBaseBodyPose(body, X_WB)
+                else:
+                    plant.SetDefaultFreeBodyPose(body, X_WB)
             if "default_joint_positions" in add_model:
                 pending_joint_positions.append(
                     {

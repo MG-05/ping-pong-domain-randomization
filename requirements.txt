@@ -2,4 +2,7 @@ drake
 numpy
 gymnasium
 stable-baselines3
+tensorboard
+tqdm
+rich
 matplotlib  # optional

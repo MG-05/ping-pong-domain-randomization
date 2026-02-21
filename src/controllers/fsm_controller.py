@@ -152,6 +152,28 @@ class FSMController(LeafSystem):
 
         self._try_initialize_ik_model(scenario_yaml)
 
+    def reset(self) -> None:
+        """Reset all FSM internal state for a new episode."""
+        self._state = FsmState.WAIT
+        self._state_enter_time = 0.0
+        self._last_update_time = -np.inf
+        self._last_plan_time = -np.inf
+        self._q_command = self._q_home.copy()
+        self._q_prehit = self._q_home.copy()
+        self._q_hit = self._q_home.copy()
+        self._q_follow = self._q_home.copy()
+        self._q_prehit_start = self._q_home.copy()
+        self._t_hit_abs = np.inf
+        self._t_strike_start = np.inf
+        self._t_strike_end = np.inf
+        self._t_follow_end = np.inf
+        self._t_prehit_start = 0.0
+        self._last_hit_time = -np.inf
+        self._hit_count = 0
+        self._plan_count = 0
+        self._ik_success_count = 0
+        self._prev_ball_vz = None
+
     def get_ball_input_port(self):
         return self._ball_state_port
 
