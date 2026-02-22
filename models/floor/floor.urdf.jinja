@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot name="floor" xmlns:drake="http://drake.mit.edu">
+  <link name="floor_link">
+    <visual name="floor_visual">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="10 10 0.01"/>
+      </geometry>
+      <material name="floor_dark_blue">
+        <color rgba="0.098039 0.121569 0.203922 1"/>
+      </material>
+    </visual>
+    <collision name="floor_collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="10 10 0.01"/>
+      </geometry>
+      <drake:proximity_properties>
+        <drake:hunt_crossley_dissipation value="{{ floor_dissipation }}"/>
+        <drake:restitution value="{{ floor_restitution }}"/>
+      </drake:proximity_properties>
+    </collision>
+  </link>
+</robot>

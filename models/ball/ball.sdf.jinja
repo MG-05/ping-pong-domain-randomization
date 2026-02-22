@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="ball">
+    <static>false</static>
+    <link name="ball_link">
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>{{ ball_mass }}</mass>
+        <inertia>
+          <ixx>4.32e-07</ixx>
+          <iyy>4.32e-07</iyy>
+          <izz>4.32e-07</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry>
+          <sphere>
+            <radius>0.02</radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>{{ ball_friction }}</mu>
+              <mu2>{{ ball_friction }}</mu2>
+            </ode>
+          </friction>
+          <bounce>
+            <restitution_coefficient>{{ ball_restitution }}</restitution_coefficient>
+            <threshold>0.0</threshold>
+          </bounce>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius>0.02</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <ambient>0.9 0.9 0.9 1</ambient>
+          <diffuse>0.9 0.9 0.9 1</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

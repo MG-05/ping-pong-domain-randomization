@@ -24,6 +24,7 @@ from typing import Any
 import gymnasium as gym
 import numpy as np
 from pydrake.all import DiagramBuilder, Simulator
+from src.utils.randomization import DomainRandomizer
 
 from src.controllers.fsm_controller import (
     BALL_CONTACT_FORCE_SIZE,
@@ -62,6 +63,7 @@ class EnvConfig:
     reward_hit: float = 5.0
     reward_apex: float = 2.0
     penalty_drop: float = 5.0
+    use_randomization: bool = True
 
 
 class PingPongResidualEnv(gym.Env):
@@ -77,7 +79,10 @@ class PingPongResidualEnv(gym.Env):
     ) -> None:
         super().__init__()
         self._cfg = config or EnvConfig()
-        self._scenario_yaml = scenario_yaml or str(scenario_path())
+        self._randomizer = DomainRandomizer()
+        # Keep track of the nominal YAML for the FSM controller
+        self._nominal_yaml = scenario_yaml or str(scenario_path())
+        self._scenario_yaml = self._nominal_yaml
         self._render_mode = render_mode
 
         self.observation_space = gym.spaces.Box(
@@ -119,6 +124,10 @@ class PingPongResidualEnv(gym.Env):
         self, *, seed: int | None = None, options: dict[str, Any] | None = None
     ) -> tuple[np.ndarray, dict]:
         super().reset(seed=seed)
+        if self._cfg.use_randomization:
+            self._scenario_yaml = self._randomizer.generate_randomized_scenario()
+        else:
+            self._scenario_yaml = self._nominal_yaml
         self._build_sim()
         self._set_initial_conditions()
         self._fsm.reset()

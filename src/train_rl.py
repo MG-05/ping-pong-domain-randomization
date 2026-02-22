@@ -1,8 +1,8 @@
 """Train a residual SAC policy on top of the FSM/IK inner-loop controller.
 
 Usage:
-    python -m src.train_rl --steps 100000
-    python -m src.train_rl --steps 500000 --save-path data/sac_nominal
+    python -m src.train_rl --steps 100000 --randomize
+    python -m src.train_rl --steps 500000 --no-randomize --save-path data/sac_nominal
 """
 from __future__ import annotations
 
@@ -63,6 +63,7 @@ def make_eval_env(config: EnvConfig | None = None) -> PingPongResidualEnv:
         residual_scale=cfg.residual_scale,
         ball_init_pos=cfg.ball_init_pos,
         ball_init_pos_noise=0.0,
+        use_randomization=cfg.use_randomization,
     )
     env = PingPongResidualEnv(config=eval_cfg)
     return Monitor(env)
@@ -128,6 +129,14 @@ def main() -> int:
         "--resume", default=None, help="Path to a saved model to resume from."
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed.")
+    
+    parser.add_argument(
+        "--randomize", 
+        action=argparse.BooleanOptionalAction, 
+        default=True,
+        help="Enable domain randomization (use --no-randomize to disable)"
+    )
+    
     args = parser.parse_args()
 
     save_dir = Path(args.save_path)
@@ -139,21 +148,23 @@ def main() -> int:
         max_residual_rad=args.max_residual,
         residual_scale=args.residual_scale,
         target_apex_height=args.target_apex,
+        use_randomization=args.randomize,
     )
 
     if args.steps <= 0:
         print("=== Ping-Pong Residual SAC Trainer ===")
-        print(f"  Env observation dim : {20}")
-        print(f"  Env action dim      : {7}")
-        print(f"  Residual scale      : {args.residual_scale}")
-        print(f"  Max residual (rad)  : {args.max_residual}")
-        print(f"  Target apex (m)     : {args.target_apex}")
-        print(f"  Save directory      : {save_dir}")
+        print(f"  Env observation dim   : {20}")
+        print(f"  Env action dim        : {7}")
+        print(f"  Residual scale        : {args.residual_scale}")
+        print(f"  Max residual (rad)    : {args.max_residual}")
+        print(f"  Target apex (m)       : {args.target_apex}")
+        print(f"  Domain Randomization  : {args.randomize}")
+        print(f"  Save directory        : {save_dir}")
         print()
         print("Pass --steps N to start training.")
         return 0
 
-    print(f"Building training environment …")
+    print(f"Building training environment (Randomization={args.randomize}) …")
     train_env = DummyVecEnv([lambda: make_train_env(env_cfg)])
     eval_env = DummyVecEnv([lambda: make_eval_env(env_cfg)])
 

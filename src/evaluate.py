@@ -1,8 +1,11 @@
 """Evaluate a trained residual SAC policy (or the pure FSM baseline).
 
 Usage:
-    # Evaluate trained policy
-    python -m src.evaluate --model data/sac_nominal/sac_final.zip --episodes 20
+    # Evaluate trained policy on nominal physics
+    python -m src.evaluate --model data/sac_nominal/sac_final.zip --episodes 20 --no-randomize
+
+    # Evaluate trained policy on randomized (OOD) physics
+    python -m src.evaluate --model data/sac_nominal/sac_final.zip --episodes 20 --randomize
 
     # Evaluate pure FSM (no residual) for baseline comparison
     python -m src.evaluate --fsm-only --episodes 20
@@ -97,6 +100,14 @@ def main() -> int:
         default=True,
         help="Use deterministic actions.",
     )
+    
+    parser.add_argument(
+        "--randomize", 
+        action=argparse.BooleanOptionalAction, 
+        default=False,
+        help="Enable domain randomization for out-of-distribution evaluation."
+    )
+    
     args = parser.parse_args()
 
     if not args.fsm_only and args.model is None:
@@ -105,6 +116,7 @@ def main() -> int:
     config = EnvConfig(
         target_apex_height=args.target_apex,
         ball_init_pos_noise=0.0,
+        use_randomization=args.randomize,
     )
     env = PingPongResidualEnv(config=config)
 
@@ -122,6 +134,7 @@ def main() -> int:
     print(f"=== Evaluation: {mode_str} ===")
     print(f"  Episodes        : {args.episodes}")
     print(f"  Target apex (m) : {args.target_apex}")
+    print(f"  Randomization   : {'Enabled (OOD Evaluation)' if args.randomize else 'Disabled (Nominal Evaluation)'}")
     print()
 
     results = run_evaluation(

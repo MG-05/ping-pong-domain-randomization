@@ -7,12 +7,11 @@ except ImportError:  # pragma: no cover - fallback for older Drake layouts
     from pydrake.gym import DrakeGymEnv
 
 from src.station import make_station
-from src.utils import randomization
+from src.utils.randomization import DomainRandomizer
 from src.utils.paths import scenario_path
 from src.utils.wsg import maybe_connect_wsg_hold
 
 DEFAULT_TIME_STEP = 0.01
-
 
 def _build_simulator(scenario_yaml: str):
     builder = DiagramBuilder()
@@ -30,24 +29,30 @@ def _build_simulator(scenario_yaml: str):
     simulator = Simulator(diagram)
     return simulator, action_port.get_index(), observation_port.get_index()
 
-
 def _reward_fn(*_args, **_kwargs) -> float:
     # TODO: add task reward, e.g., ball return success or paddle-ball contact.
     return 0.0
 
-
-def make_env(render_mode=None) -> DrakeGymEnv:
+def make_env(render_mode=None, use_randomization=True) -> DrakeGymEnv:
     """Create a DrakeGymEnv with placeholder ports and reward."""
-    scenario_yaml = str(scenario_path())
+    
+    nominal_yaml = str(scenario_path())
+    randomizer = DomainRandomizer()
 
-    _, action_port_id, observation_port_id = _build_simulator(scenario_yaml)
-
+    # The simulator factory is called by DrakeGymEnv on every reset
     def simulator_factory(rng):
-        simulator, _, _ = _build_simulator(scenario_yaml)
-        # TODO: wire domain randomization into plant/scene graph.
-        system = simulator.get_system() if hasattr(simulator, "get_system") else simulator
-        randomization.apply_domain_randomization(system, rng)
+        if use_randomization:
+            # Generate new randomized files and get the path
+            current_yaml = randomizer.generate_randomized_scenario()
+        else:
+            current_yaml = nominal_yaml
+            
+        # Build the simulator from scratch using the determined YAML
+        simulator, _, _ = _build_simulator(current_yaml)
         return simulator
+
+    # We still need to build it once to get the port IDs
+    _, action_port_id, observation_port_id = _build_simulator(nominal_yaml)
 
     env = DrakeGymEnv(
         simulator_factory=simulator_factory,

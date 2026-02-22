@@ -11,6 +11,7 @@ from src.controllers.fsm_controller import FSMController
 from src.station import get_iiwa_default_joint_positions, make_station
 from src.utils.paths import scenario_path
 from src.utils.wsg import maybe_connect_wsg_hold
+from src.utils.randomization import DomainRandomizer
 
 
 def _connect_optional_ball_ports(builder, station, controller) -> None:
@@ -93,7 +94,25 @@ def main() -> int:
         default="logs/meshcat.html",
         help="Where to write the Meshcat HTML recording.",
     )
+    
+    parser.add_argument(
+        "--randomize", 
+        action=argparse.BooleanOptionalAction, 
+        default=False,
+        help="Enable domain randomization to visually debug physics changes."
+    )
+    
     args = parser.parse_args()
+
+    # Swap the scenario YAML if randomization is enabled
+    scenario_to_run = args.scenario
+    if args.randomize:
+        print("Domain Randomization is ENABLED. Generating new physics parameters...")
+        randomizer = DomainRandomizer()
+        scenario_to_run = randomizer.generate_randomized_scenario()
+        print(f"Running randomized simulation using: {scenario_to_run}")
+    else:
+        print(f"Running nominal simulation using: {scenario_to_run}")
 
     lcm = None
     if not args.no_lcm:
@@ -101,8 +120,9 @@ def main() -> int:
             lcm = DrakeLcm()
         except Exception as exc:
             print(f"LCM unavailable ({exc}); continuing without LCM.")
+            
     _, simulator, station, meshcat_instance = build_diagram(
-        args.scenario, args.meshcat, lcm=lcm, controller_type=args.controller
+        scenario_to_run, args.meshcat, lcm=lcm, controller_type=args.controller
     )
 
     record = args.meshcat and not args.no_record
