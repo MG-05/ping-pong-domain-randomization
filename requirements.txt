@@ -6,3 +6,4 @@ tensorboard
 tqdm
 rich
 matplotlib  # optional
+jinja2
