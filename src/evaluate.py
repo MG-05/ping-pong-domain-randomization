@@ -10,8 +10,18 @@ Usage:
     # Evaluate pure FSM (no residual) for baseline comparison
     python -m src.evaluate --fsm-only --episodes 20
 
-    # Evaluate with meshcat visualisation (single episode)
-    python -m src.evaluate --model data/sac_nominal/sac_final.zip --episodes 1 --render
+    # Visually watch a trained model in Meshcat (single episode, real-time)
+    python -m src.evaluate --model data/sac_nominal/sac_final.zip --episodes 1 --render --realtime
+
+    # Watch a specific checkpoint (e.g. 100k steps)
+    python -m src.evaluate --model data/sac_nominal/checkpoints/sac_residual_100000_steps.zip --render --realtime
+
+    # Save a Meshcat recording to HTML
+    python -m src.evaluate --model data/sac_robust/sac_final.zip --render --record-path logs/robust_demo.html
+
+    # Compare all checkpoints under both physics conditions
+    python -m src.evaluate --model-dir data/sac_nominal --episodes 5 --no-randomize
+    python -m src.evaluate --model-dir data/sac_nominal --episodes 5 --randomize
 """
 from __future__ import annotations
 
@@ -22,6 +32,70 @@ import numpy as np
 from stable_baselines3 import SAC
 
 from src.envs.residual_env import EnvConfig, PingPongResidualEnv
+
+
+def _collect_models(args) -> list[tuple[str, Path]]:
+    """Build an ordered list of (label, path) pairs from CLI args."""
+    if args.fsm_only:
+        return [("FSM-only (zero residual)", None)]
+
+    if args.model is not None:
+        path = _resolve_model_path(args.model)
+        return [(path.stem, path)]
+
+    if args.model_dir is not None:
+        return _discover_checkpoints(Path(args.model_dir))
+
+    return []
+
+
+def _resolve_model_path(raw: str) -> Path:
+    path = Path(raw)
+    if path.exists():
+        return path
+    if not raw.endswith(".zip") and Path(raw + ".zip").exists():
+        return Path(raw + ".zip")
+    return path
+
+
+def _discover_checkpoints(model_dir: Path) -> list[tuple[str, Path]]:
+    """Find all saved models in a training directory, sorted by step count."""
+    models: list[tuple[int, str, Path]] = []
+
+    final = model_dir / "sac_final.zip"
+    if final.exists():
+        models.append((float("inf"), "final", final))
+
+    best = model_dir / "best" / "best_model.zip"
+    if best.exists():
+        models.append((float("inf") - 1, "best", best))
+
+    ckpt_dir = model_dir / "checkpoints"
+    if ckpt_dir.is_dir():
+        for f in sorted(ckpt_dir.glob("*.zip")):
+            step_count = _parse_step_count(f.stem)
+            label = f"{step_count // 1000}k" if step_count >= 1000 else str(step_count)
+            models.append((step_count, label, f))
+
+    models.sort(key=lambda x: x[0])
+    return [(label, path) for _, label, path in models]
+
+
+def _parse_step_count(stem: str) -> int:
+    """Extract step count from checkpoint filenames like 'sac_residual_100000_steps'."""
+    parts = stem.split("_")
+    for i, part in enumerate(parts):
+        if part == "steps" and i > 0:
+            try:
+                return int(parts[i - 1])
+            except ValueError:
+                pass
+    for part in parts:
+        try:
+            return int(part)
+        except ValueError:
+            continue
+    return 0
 
 
 def run_evaluation(
@@ -64,7 +138,7 @@ def run_evaluation(
             f"sim_time={info.get('sim_time', 0.0):.2f}s"
         )
 
-    results = {
+    return {
         "n_episodes": n_episodes,
         "mean_reward": float(np.mean(episode_rewards)),
         "std_reward": float(np.std(episode_rewards)),
@@ -74,80 +148,143 @@ def run_evaluation(
         "mean_length": float(np.mean(episode_lengths)),
         "mean_sim_time": float(np.mean(episode_sim_times)),
     }
-    return results
+
+
+def _print_summary(results: dict) -> None:
+    print(f"  Mean reward     : {results['mean_reward']:.2f} ± {results['std_reward']:.2f}")
+    print(f"  Mean hits       : {results['mean_hits']:.1f} ± {results['std_hits']:.1f}")
+    print(f"  Max hits        : {results['max_hits']}")
+    print(f"  Mean sim time   : {results['mean_sim_time']:.2f}s")
+    print(f"  Mean ep length  : {results['mean_length']:.0f} steps")
+
+
+def _setup_meshcat():
+    from pydrake.all import StartMeshcat
+    meshcat = StartMeshcat()
+    print(f"  Meshcat URL     : {meshcat.web_url()}")
+    return meshcat
+
+
+def _start_recording(env: PingPongResidualEnv):
+    vis = env.get_meshcat_visualizer()
+    if vis is not None:
+        vis.StartRecording()
+    return vis
+
+
+def _stop_and_save_recording(env: PingPongResidualEnv, meshcat, record_path: str | None):
+    vis = env.get_meshcat_visualizer()
+    if vis is None:
+        return
+    vis.StopRecording()
+    vis.PublishRecording()
+    if record_path and meshcat is not None:
+        output = Path(record_path)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(meshcat.StaticHtml(), encoding="utf-8")
+        print(f"  Recording saved : {output}")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Evaluate trained policy.")
-    parser.add_argument(
-        "--model", default=None, help="Path to trained SAC model (.zip)."
+    parser = argparse.ArgumentParser(
+        description="Evaluate trained policies or FSM baseline with optional Meshcat visualization.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument(
-        "--fsm-only",
-        action="store_true",
-        help="Evaluate the FSM controller with zero residual (baseline).",
+
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--model", default=None, help="Path to a single trained SAC model (.zip).")
+    source.add_argument(
+        "--model-dir", default=None,
+        help="Path to a training directory. Discovers and evaluates all checkpoints (final, best, and each saved step).",
     )
-    parser.add_argument("--episodes", type=int, default=10, help="Number of episodes.")
+    source.add_argument("--fsm-only", action="store_true", help="Evaluate pure FSM (zero residual).")
+
+    parser.add_argument("--episodes", type=int, default=10, help="Episodes per model.")
+    parser.add_argument("--target-apex", type=float, default=0.55, help="Target apex height.")
+    parser.add_argument("--deterministic", action="store_true", default=True, help="Use deterministic actions.")
     parser.add_argument(
-        "--target-apex", type=float, default=0.55, help="Target apex height."
+        "--randomize", action=argparse.BooleanOptionalAction, default=False,
+        help="Enable domain randomization for out-of-distribution evaluation.",
     )
-    parser.add_argument(
-        "--render", action="store_true", help="Enable rendering (single episode)."
-    )
-    parser.add_argument(
-        "--deterministic",
-        action="store_true",
-        default=True,
-        help="Use deterministic actions.",
-    )
-    
-    parser.add_argument(
-        "--randomize", 
-        action=argparse.BooleanOptionalAction, 
-        default=False,
-        help="Enable domain randomization for out-of-distribution evaluation."
-    )
-    
+
+    vis_group = parser.add_argument_group("visualization")
+    vis_group.add_argument("--render", action="store_true", help="Enable Meshcat 3D visualization.")
+    vis_group.add_argument("--realtime", action="store_true", help="Run simulation at real-time speed (requires --render).")
+    vis_group.add_argument("--record-path", default=None, help="Save Meshcat recording as a self-contained HTML file.")
+
     args = parser.parse_args()
 
-    if not args.fsm_only and args.model is None:
-        parser.error("Provide --model PATH or use --fsm-only.")
+    if not args.fsm_only and args.model is None and args.model_dir is None:
+        parser.error("Provide --model PATH, --model-dir DIR, or --fsm-only.")
+
+    models = _collect_models(args)
+    if not models:
+        parser.error("No models found. Check your --model or --model-dir path.")
+
+    meshcat = _setup_meshcat() if args.render else None
 
     config = EnvConfig(
         target_apex_height=args.target_apex,
         ball_init_pos_noise=0.0,
         use_randomization=args.randomize,
     )
-    env = PingPongResidualEnv(config=config)
+    env = PingPongResidualEnv(config=config, meshcat=meshcat)
+    if args.realtime:
+        env.set_realtime_rate(1.0)
 
-    model = None
-    mode_str = "FSM-only (zero residual)"
-    if not args.fsm_only:
-        model_path = args.model
-        if not model_path.endswith(".zip"):
-            model_path += ".zip"
-        if not Path(model_path).exists():
-            model_path = args.model
-        model = SAC.load(model_path)
-        mode_str = f"SAC residual policy ({args.model})"
+    physics_label = "Randomized (OOD)" if args.randomize else "Nominal"
+    print(f"\n{'=' * 60}")
+    print(f"  Physics         : {physics_label}")
+    print(f"  Episodes/model  : {args.episodes}")
+    print(f"  Models to eval  : {len(models)}")
+    print(f"  Visualization   : {'Meshcat' if args.render else 'Disabled'}")
+    print(f"{'=' * 60}\n")
 
-    print(f"=== Evaluation: {mode_str} ===")
-    print(f"  Episodes        : {args.episodes}")
-    print(f"  Target apex (m) : {args.target_apex}")
-    print(f"  Randomization   : {'Enabled (OOD Evaluation)' if args.randomize else 'Disabled (Nominal Evaluation)'}")
-    print()
+    all_results: list[tuple[str, dict]] = []
 
-    results = run_evaluation(
-        env, model, args.episodes, deterministic=args.deterministic
-    )
+    for label, model_path in models:
+        sac_model = None
+        if model_path is not None:
+            if not model_path.exists():
+                print(f"[SKIP] {label}: file not found ({model_path})")
+                continue
+            sac_model = SAC.load(str(model_path))
 
-    print()
-    print("=== Summary ===")
-    print(f"  Mean reward     : {results['mean_reward']:.2f} ± {results['std_reward']:.2f}")
-    print(f"  Mean hits       : {results['mean_hits']:.1f} ± {results['std_hits']:.1f}")
-    print(f"  Max hits        : {results['max_hits']}")
-    print(f"  Mean sim time   : {results['mean_sim_time']:.2f}s")
-    print(f"  Mean ep length  : {results['mean_length']:.0f} steps")
+        print(f"--- {label} ---")
+        if model_path:
+            print(f"  Path: {model_path}")
+
+        if args.render:
+            _start_recording(env)
+
+        results = run_evaluation(env, sac_model, args.episodes, deterministic=args.deterministic)
+
+        if args.render:
+            per_model_record = args.record_path
+            if per_model_record and len(models) > 1:
+                stem = Path(per_model_record).stem
+                suffix = Path(per_model_record).suffix or ".html"
+                per_model_record = str(Path(per_model_record).parent / f"{stem}_{label}{suffix}")
+            _stop_and_save_recording(env, meshcat, per_model_record)
+
+        print("  Summary:")
+        _print_summary(results)
+        print()
+        all_results.append((label, results))
+
+    if len(all_results) > 1:
+        print(f"{'=' * 60}")
+        print("  COMPARISON TABLE")
+        print(f"{'=' * 60}")
+        header = f"{'Model':<25} {'Mean Hits':>10} {'Std':>6} {'Max':>5} {'Mean Reward':>12} {'Sim Time':>9}"
+        print(header)
+        print("-" * len(header))
+        for label, r in all_results:
+            print(
+                f"{label:<25} {r['mean_hits']:>10.1f} {r['std_hits']:>6.1f} "
+                f"{r['max_hits']:>5d} {r['mean_reward']:>12.2f} {r['mean_sim_time']:>8.2f}s"
+            )
+        print()
 
     env.close()
     return 0

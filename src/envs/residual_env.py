@@ -76,14 +76,16 @@ class PingPongResidualEnv(gym.Env):
         scenario_yaml: str | None = None,
         config: EnvConfig | None = None,
         render_mode: str | None = None,
+        meshcat=None,
     ) -> None:
         super().__init__()
         self._cfg = config or EnvConfig()
         self._randomizer = DomainRandomizer()
-        # Keep track of the nominal YAML for the FSM controller
         self._nominal_yaml = scenario_yaml or str(scenario_path())
         self._scenario_yaml = self._nominal_yaml
         self._render_mode = render_mode
+        self._meshcat = meshcat
+        self._target_realtime_rate: float = 0.0
 
         self.observation_space = gym.spaces.Box(
             low=-np.inf, high=np.inf, shape=(OBS_DIM,), dtype=np.float64
@@ -115,6 +117,9 @@ class PingPongResidualEnv(gym.Env):
         self._prev_ball_vz: float = 0.0
         self._prev_ball_z: float = 0.0
         self._episode_hits: int = 0
+
+    def set_realtime_rate(self, rate: float) -> None:
+        self._target_realtime_rate = rate
 
     # ------------------------------------------------------------------
     # Gym API
@@ -186,7 +191,7 @@ class PingPongResidualEnv(gym.Env):
     def _build_sim(self) -> None:
         builder = DiagramBuilder()
         self._station = builder.AddSystem(
-            make_station(self._scenario_yaml, meshcat=None, lcm=None)
+            make_station(self._scenario_yaml, meshcat=self._meshcat, lcm=None)
         )
         maybe_connect_wsg_hold(builder, self._station)
 
@@ -206,6 +211,8 @@ class PingPongResidualEnv(gym.Env):
 
         self._diagram = builder.Build()
         self._simulator = Simulator(self._diagram)
+        if self._target_realtime_rate > 0:
+            self._simulator.set_target_realtime_rate(self._target_realtime_rate)
 
         self._plant = self._station.GetSubsystemByName("plant")
         self._iiwa_instance = self._plant.GetModelInstanceByName("iiwa")
@@ -331,3 +338,11 @@ class PingPongResidualEnv(gym.Env):
             "fsm_state": self._fsm.get_state_name(),
             "fsm_metrics": self._fsm.get_metrics(),
         }
+
+    def get_meshcat_visualizer(self):
+        if self._station is None:
+            return None
+        try:
+            return self._station.GetSubsystemByName("meshcat_visualizer")
+        except Exception:
+            return None

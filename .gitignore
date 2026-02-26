@@ -210,3 +210,5 @@ __marimo__/
 # Project-specific: training artifacts and recordings
 data/
 logs/
+.DS_Store
+*.pdf
