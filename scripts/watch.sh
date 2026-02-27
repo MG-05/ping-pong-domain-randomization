@@ -22,7 +22,12 @@ source "$REPO_ROOT/.venv/bin/activate"
 
 MODEL_TYPE="${1:-}"
 STEPS="${2:-}"
-shift 2 2>/dev/null || true
+if [[ "$#" -gt 0 ]]; then
+    shift
+fi
+if [[ "$MODEL_TYPE" != "fsm" && "$#" -gt 0 ]]; then
+    shift
+fi
 
 if [[ -z "$MODEL_TYPE" ]]; then
     echo "Usage: ./scripts/watch.sh <nominal|robust|fsm> [500k|750k|1m] [extra flags...]"

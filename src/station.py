@@ -93,13 +93,17 @@ def _split_scoped(name: str):
     return None, name
 
 
-def _resolve_frame(plant, scoped_name: str):
+def _resolve_frame(plant, scoped_name: str, model_instances=None):
     if scoped_name in ("world", "world::world"):
         return plant.world_frame()
     model_name, frame_name = _split_scoped(scoped_name)
     if model_name is None:
         raise ValueError(f"Expected scoped frame name, got: {scoped_name}")
-    model_instance = plant.GetModelInstanceByName(model_name)
+    model_instance = None
+    if model_instances is not None and model_name in model_instances:
+        model_instance = model_instances[model_name]
+    else:
+        model_instance = plant.GetModelInstanceByName(model_name)
     try:
         return plant.GetFrameByName(frame_name, model_instance)
     except Exception:
@@ -158,6 +162,25 @@ def _resolve_model_path(path: str) -> str:
                 return str(models_root / rel_path)
         return None  # signal to use Parser's package resolution
     return path
+
+
+def _add_models_compat(parser: Parser, source: str, model_name: str | None = None):
+    """Add models using the best available Parser API across Drake versions."""
+    if hasattr(parser, "AddModelsFromUrl"):
+        return parser.AddModelsFromUrl(url=source)
+
+    file_name = source
+    if file_name.startswith("file://"):
+        file_name = file_name[len("file://") :]
+    if model_name is not None:
+        try:
+            return [parser.AddModelFromFile(file_name=file_name, model_name=model_name)]
+        except TypeError:
+            return [parser.AddModelFromFile(file_name, model_name)]
+        except RuntimeError:
+            # Some files may declare multiple top-level models; fall back to AddModels.
+            pass
+    return parser.AddModels(file_name)
 
 
 def _add_lcm_publishers(
@@ -341,13 +364,17 @@ def _make_station_fallback(scenario_yaml: str, meshcat=None, lcm=None):
             url = add_model["file"]
             resolved = _resolve_model_path(url)
             if resolved is not None:
-                file_url = "file://" + resolved if not resolved.startswith("file://") else resolved
-                instances = parser.AddModelsFromUrl(url=file_url)
+                model_source = (
+                    "file://" + resolved
+                    if not resolved.startswith("file://")
+                    else resolved
+                )
             else:
-                instances = parser.AddModelsFromUrl(url=url)
+                model_source = url
+            instances = _add_models_compat(parser, model_source, model_name=name)
             instance = instances[0]
             actual_name = plant.GetModelInstanceName(instance)
-            if actual_name != name:
+            if actual_name != name and hasattr(plant, "RenameModelInstance"):
                 plant.RenameModelInstance(instance, name)
             model_instances[name] = instance
 
@@ -378,8 +405,12 @@ def _make_station_fallback(scenario_yaml: str, meshcat=None, lcm=None):
             pending_welds.append(directive["add_weld"])
 
     for weld in pending_welds:
-        parent_frame = _resolve_frame(plant, weld["parent"])
-        child_frame = _resolve_frame(plant, weld["child"])
+        parent_frame = _resolve_frame(
+            plant, weld["parent"], model_instances=model_instances
+        )
+        child_frame = _resolve_frame(
+            plant, weld["child"], model_instances=model_instances
+        )
         X_PC = _parse_transform(weld.get("X_PC"))
         plant.WeldFrames(parent_frame, child_frame, X_PC)
 
@@ -393,9 +424,14 @@ def _make_station_fallback(scenario_yaml: str, meshcat=None, lcm=None):
             continue
         plant.SetDefaultPositions(entry["model_instance"], q0)
 
-    iiwa_instance = plant.GetModelInstanceByName("iiwa")
+    if "iiwa" in model_instances:
+        iiwa_instance = model_instances["iiwa"]
+    else:
+        iiwa_instance = plant.GetModelInstanceByName("iiwa")
     wsg_instance = None
-    if plant.HasModelInstanceNamed("wsg"):
+    if "wsg" in model_instances:
+        wsg_instance = model_instances["wsg"]
+    elif plant.HasModelInstanceNamed("wsg"):
         wsg_instance = plant.GetModelInstanceByName("wsg")
     num_joints = plant.num_positions(iiwa_instance)
 
@@ -414,7 +450,16 @@ def _make_station_fallback(scenario_yaml: str, meshcat=None, lcm=None):
     builder.ExportOutput(
         plant.get_state_output_port(iiwa_instance), "iiwa.state_estimated"
     )
-    if plant.HasModelInstanceNamed("ball"):
+    if "ball" in model_instances:
+        ball_instance = model_instances["ball"]
+        builder.ExportOutput(
+            plant.get_state_output_port(ball_instance), "ball.state_estimated"
+        )
+        builder.ExportOutput(
+            plant.get_generalized_contact_forces_output_port(ball_instance),
+            "ball.contact_forces",
+        )
+    elif plant.HasModelInstanceNamed("ball"):
         ball_instance = plant.GetModelInstanceByName("ball")
         builder.ExportOutput(
             plant.get_state_output_port(ball_instance), "ball.state_estimated"

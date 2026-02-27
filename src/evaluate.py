@@ -27,11 +27,14 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
-from stable_baselines3 import SAC
 
 from src.envs.residual_env import EnvConfig, PingPongResidualEnv
+
+if TYPE_CHECKING:
+    from stable_baselines3 import SAC
 
 
 def _collect_models(args) -> list[tuple[str, Path]]:
@@ -100,7 +103,7 @@ def _parse_step_count(stem: str) -> int:
 
 def run_evaluation(
     env: PingPongResidualEnv,
-    model: SAC | None,
+    model: "SAC | None",
     n_episodes: int,
     deterministic: bool = True,
 ) -> dict:
@@ -160,7 +163,11 @@ def _print_summary(results: dict) -> None:
 
 def _setup_meshcat():
     from pydrake.all import StartMeshcat
-    meshcat = StartMeshcat()
+    try:
+        meshcat = StartMeshcat()
+    except Exception as exc:
+        print(f"  Meshcat         : unavailable ({exc})")
+        return None
     print(f"  Meshcat URL     : {meshcat.web_url()}")
     return meshcat
 
@@ -222,6 +229,7 @@ def main() -> int:
         parser.error("No models found. Check your --model or --model-dir path.")
 
     meshcat = _setup_meshcat() if args.render else None
+    render_enabled = args.render and meshcat is not None
 
     config = EnvConfig(
         target_apex_height=args.target_apex,
@@ -237,7 +245,7 @@ def main() -> int:
     print(f"  Physics         : {physics_label}")
     print(f"  Episodes/model  : {args.episodes}")
     print(f"  Models to eval  : {len(models)}")
-    print(f"  Visualization   : {'Meshcat' if args.render else 'Disabled'}")
+    print(f"  Visualization   : {'Meshcat' if render_enabled else 'Disabled'}")
     print(f"{'=' * 60}\n")
 
     all_results: list[tuple[str, dict]] = []
@@ -248,18 +256,19 @@ def main() -> int:
             if not model_path.exists():
                 print(f"[SKIP] {label}: file not found ({model_path})")
                 continue
+            from stable_baselines3 import SAC
             sac_model = SAC.load(str(model_path))
 
         print(f"--- {label} ---")
         if model_path:
             print(f"  Path: {model_path}")
 
-        if args.render:
+        if render_enabled:
             _start_recording(env)
 
         results = run_evaluation(env, sac_model, args.episodes, deterministic=args.deterministic)
 
-        if args.render:
+        if render_enabled:
             per_model_record = args.record_path
             if per_model_record and len(models) > 1:
                 stem = Path(per_model_record).stem
