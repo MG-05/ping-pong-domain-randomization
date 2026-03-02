@@ -7,3 +7,4 @@ tqdm
 rich
 matplotlib  # optional
 jinja2
+mujoco  # optional (for mujoco_transfer)

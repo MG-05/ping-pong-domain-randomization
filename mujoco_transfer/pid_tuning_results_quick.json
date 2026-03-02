@@ -1,0 +1,678 @@
+{
+  "target": {
+    "hits": 154.0,
+    "sim_time": 19.300000000000217
+  },
+  "search": {
+    "iterations": 40,
+    "episodes_per_iter": 2,
+    "seed": 0,
+    "physics_dt": 0.001,
+    "control_dt": 0.01,
+    "max_time": 20.0,
+    "ball_init_pos": [
+      0.77,
+      -0.03,
+      0.7
+    ],
+    "ball_noise": 0.0
+  },
+  "best": {
+    "iter": 30,
+    "kp": 4017.8481777046336,
+    "kd": 15.677149377077722,
+    "torque_limit": 347.55446832108254,
+    "score": 3.8540946100531617,
+    "mean_hits": 1.0,
+    "std_hits": 0.0,
+    "mean_sim_time": 2.439999999999992,
+    "mean_plans": 3.0,
+    "mean_ik_successes": 3.0,
+    "reasons": [
+      "ball_dropped",
+      "ball_dropped"
+    ]
+  },
+  "all": [
+    {
+      "iter": 1,
+      "kp": 1554.047261443322,
+      "kd": 28.731581653190666,
+      "torque_limit": 86.88490500355203,
+      "score": 3.949740932642488,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.9700000000000006,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 2,
+      "kp": 210.92819615837206,
+      "kd": 240.8361865164821,
+      "torque_limit": 503.2769446395694,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 3,
+      "kp": 1409.5173216084052,
+      "kd": 173.53727571737193,
+      "torque_limit": 239.2187181187853,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 4,
+      "kp": 4057.0013094900723,
+      "kd": 243.28241393556135,
+      "torque_limit": 80.44264507430375,
+      "score": 3.964766839378239,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.6800000000000004,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 5,
+      "kp": 3159.5827748686147,
+      "kd": 11.404096537425511,
+      "torque_limit": 348.0031730319088,
+      "score": 3.9002085996904663,
+      "mean_hits": 1.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 1.5500000000000012,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 6,
+      "kp": 352.0351389604123,
+      "kd": 292.76226430079976,
+      "torque_limit": 238.1780451505375,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 7,
+      "kp": 524.8186243250142,
+      "kd": 52.25560858478143,
+      "torque_limit": 84.69766434056852,
+      "score": 3.9787564766839383,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.4100000000000002,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 8,
+      "kp": 298.38058445334957,
+      "kd": 137.8385718551033,
+      "torque_limit": 294.72736318228743,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 9,
+      "kp": 1449.7778617405543,
+      "kd": 44.85973007105386,
+      "torque_limit": 596.636438057786,
+      "score": 3.963212435233161,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.7100000000000004,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 10,
+      "kp": 4700.877755314626,
+      "kd": 146.12188577001027,
+      "torque_limit": 296.67551372715803,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 11,
+      "kp": 1834.1600261881033,
+      "kd": 45.78949284353698,
+      "torque_limit": 105.02863116065572,
+      "score": 3.9235246618666317,
+      "mean_hits": 1.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 1.1000000000000008,
+      "mean_plans": 5.0,
+      "mean_ik_successes": 18.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 12,
+      "kp": 2039.9870580460222,
+      "kd": 78.08385306317841,
+      "torque_limit": 149.4757133067681,
+      "score": 3.932332952022072,
+      "mean_hits": 1.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.9300000000000006,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 13,
+      "kp": 955.4295767775021,
+      "kd": 324.4988408464207,
+      "torque_limit": 525.3337297197211,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 14,
+      "kp": 632.7122108077087,
+      "kd": 93.54316047062396,
+      "torque_limit": 153.0190223842325,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 15,
+      "kp": 1354.6458942129332,
+      "kd": 37.5060247836969,
+      "torque_limit": 176.10861612122662,
+      "score": 3.9281878743018646,
+      "mean_hits": 1.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 1.0100000000000007,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 16,
+      "kp": 3512.2072174895998,
+      "kd": 24.318340646014047,
+      "torque_limit": 280.81281115011575,
+      "score": 3.8924365789650777,
+      "mean_hits": 1.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 1.7000000000000013,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 17,
+      "kp": 262.10687093514906,
+      "kd": 259.79897371739924,
+      "torque_limit": 390.70523144375755,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 18,
+      "kp": 432.1695032017225,
+      "kd": 308.40429484880974,
+      "torque_limit": 90.02033100822693,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 19,
+      "kp": 590.0672108249561,
+      "kd": 18.001981312047818,
+      "torque_limit": 198.22778223548485,
+      "score": 3.948704663212436,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.9900000000000007,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 20,
+      "kp": 2595.634589675236,
+      "kd": 24.652115556529598,
+      "torque_limit": 88.84066739478327,
+      "score": 3.9204158535764764,
+      "mean_hits": 1.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 1.1600000000000008,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 21,
+      "kp": 735.477173092342,
+      "kd": 21.740408896260586,
+      "torque_limit": 96.0515686246354,
+      "score": 3.909844559585493,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 1.7400000000000013,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 22,
+      "kp": 1295.0897207798373,
+      "kd": 32.17183036303349,
+      "torque_limit": 309.8322878222478,
+      "score": 3.9245609312966834,
+      "mean_hits": 1.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 1.0800000000000007,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 23,
+      "kp": 380.137415019715,
+      "kd": 398.6776736737751,
+      "torque_limit": 166.94897311230932,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 24,
+      "kp": 280.87046140250504,
+      "kd": 117.17524734625681,
+      "torque_limit": 518.0921613819846,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 25,
+      "kp": 825.3741046107257,
+      "kd": 418.62061867728943,
+      "torque_limit": 219.04303549693876,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 26,
+      "kp": 786.0933152831883,
+      "kd": 113.16810697329933,
+      "torque_limit": 594.1011486589388,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 27,
+      "kp": 4242.250649547339,
+      "kd": 60.4787619650174,
+      "torque_limit": 368.2554201256058,
+      "score": 3.9188614494313985,
+      "mean_hits": 1.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 1.1900000000000008,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 28,
+      "kp": 991.7382938482631,
+      "kd": 79.30224518098585,
+      "torque_limit": 389.67326913215584,
+      "score": 3.9761658031088087,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.46000000000000024,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 29,
+      "kp": 759.7907418369306,
+      "kd": 176.95610773799365,
+      "torque_limit": 335.2614139182518,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 30,
+      "kp": 4017.8481777046336,
+      "kd": 15.677149377077722,
+      "torque_limit": 347.55446832108254,
+      "score": 3.8540946100531617,
+      "mean_hits": 1.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 2.439999999999992,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 3.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 31,
+      "kp": 3958.339229541194,
+      "kd": 441.0395771549759,
+      "torque_limit": 82.40601344628166,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 32,
+      "kp": 3223.643673551779,
+      "kd": 464.5376744712468,
+      "torque_limit": 550.4368946842899,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 33,
+      "kp": 322.8443275950728,
+      "kd": 449.2283748600603,
+      "torque_limit": 480.66015118107015,
+      "score": 3.9507772020725396,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.9500000000000006,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 34,
+      "kp": 2822.6645650343607,
+      "kd": 65.38604740413366,
+      "torque_limit": 127.77048038340766,
+      "score": 3.94010497274746,
+      "mean_hits": 1.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.7800000000000005,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 4.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 35,
+      "kp": 2642.475314068791,
+      "kd": 370.7234342138593,
+      "torque_limit": 136.76352290122625,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 36,
+      "kp": 1133.5168127466331,
+      "kd": 56.52281407902289,
+      "torque_limit": 522.140253584711,
+      "score": 3.9499495323329525,
+      "mean_hits": 1.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.5900000000000003,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 37,
+      "kp": 227.85656165744606,
+      "kd": 175.24941196779343,
+      "torque_limit": 275.86983597589807,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 38,
+      "kp": 219.1205323791316,
+      "kd": 166.698933205815,
+      "torque_limit": 82.61972213503158,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 39,
+      "kp": 2294.0349304956994,
+      "kd": 74.32958196123211,
+      "torque_limit": 520.1314330774946,
+      "score": 3.9426956463225897,
+      "mean_hits": 1.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.7300000000000004,
+      "mean_plans": 3.0,
+      "mean_ik_successes": 4.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    },
+    {
+      "iter": 40,
+      "kp": 247.40550662658018,
+      "kd": 268.76506822979155,
+      "torque_limit": 91.50563314188976,
+      "score": 3.981347150259068,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "mean_sim_time": 0.36000000000000015,
+      "mean_plans": 2.0,
+      "mean_ik_successes": 6.0,
+      "reasons": [
+        "ball_dropped",
+        "ball_dropped"
+      ]
+    }
+  ]
+}
