@@ -82,7 +82,10 @@ def main():
         for randomize in [False, True]:
             result = eval_model(model_path, label, randomize)
             all_results.append(result)
-            print(f"  → Mean hits: {result['mean_hits']:.1f} ± {result['std_hits']:.1f}")
+            print(
+                f"  → Mean hits: {result['mean_hits']:.1f} ± {result['std_hits']:.1f}"
+                f"  | Survival: {result['survival_rate']:.0%}"
+            )
 
     elapsed = time.time() - t0
     print(f"\nAll evaluations complete in {elapsed:.0f}s")

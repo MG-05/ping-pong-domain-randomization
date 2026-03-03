@@ -63,6 +63,7 @@ class EnvConfig:
     reward_hit: float = 5.0
     reward_apex: float = 2.0
     penalty_drop: float = 5.0
+    hit_cooldown_steps: int = 10
     use_randomization: bool = True
 
 
@@ -117,6 +118,8 @@ class PingPongResidualEnv(gym.Env):
         self._prev_ball_vz: float = 0.0
         self._prev_ball_z: float = 0.0
         self._episode_hits: int = 0
+        self._prev_in_contact: bool = False
+        self._hit_cooldown: int = 0
 
     def set_realtime_rate(self, rate: float) -> None:
         self._target_realtime_rate = rate
@@ -139,6 +142,8 @@ class PingPongResidualEnv(gym.Env):
         self._sim_time = 0.0
         self._step_count = 0
         self._episode_hits = 0
+        self._prev_in_contact = False
+        self._hit_cooldown = 0
         self._prev_ball_vz = 0.0
         self._prev_ball_z = self._cfg.ball_init_pos[2]
         return self._get_obs(), self._get_info()
@@ -299,10 +304,15 @@ class PingPongResidualEnv(gym.Env):
         if ball_z > cfg.min_ball_height:
             reward += cfg.reward_alive
 
-        hit = self._detect_hit()
-        if hit:
+        contact = self._detect_hit()
+        if self._hit_cooldown > 0:
+            self._hit_cooldown -= 1
+        is_new_hit = contact and not self._prev_in_contact and self._hit_cooldown == 0
+        if is_new_hit:
             self._episode_hits += 1
+            self._hit_cooldown = cfg.hit_cooldown_steps
             reward += cfg.reward_hit
+        self._prev_in_contact = contact
 
         if self._detect_apex(ball_z, ball_vz):
             apex_err = abs(ball_z - cfg.target_apex_height)

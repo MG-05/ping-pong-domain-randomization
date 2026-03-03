@@ -111,12 +111,14 @@ def run_evaluation(
     episode_hits: list[int] = []
     episode_lengths: list[int] = []
     episode_sim_times: list[float] = []
+    episode_survived: list[bool] = []
 
     for ep in range(n_episodes):
         obs, info = env.reset()
         total_reward = 0.0
         steps = 0
         done = False
+        ep_truncated = False
 
         while not done:
             if model is not None:
@@ -126,20 +128,25 @@ def run_evaluation(
             obs, reward, terminated, truncated, info = env.step(action)
             total_reward += reward
             steps += 1
+            ep_truncated = truncated
             done = terminated or truncated
 
         episode_rewards.append(total_reward)
         episode_hits.append(info.get("episode_hits", 0))
         episode_lengths.append(steps)
         episode_sim_times.append(info.get("sim_time", 0.0))
+        episode_survived.append(ep_truncated)
 
         print(
             f"  Episode {ep + 1:3d} | "
             f"reward={total_reward:8.2f} | "
             f"hits={info.get('episode_hits', 0):3d} | "
             f"steps={steps:5d} | "
-            f"sim_time={info.get('sim_time', 0.0):.2f}s"
+            f"sim_time={info.get('sim_time', 0.0):.2f}s | "
+            f"survived={'Y' if ep_truncated else 'N'}"
         )
+
+    survival_rate = float(sum(episode_survived)) / n_episodes
 
     return {
         "n_episodes": n_episodes,
@@ -150,6 +157,7 @@ def run_evaluation(
         "max_hits": int(np.max(episode_hits)),
         "mean_length": float(np.mean(episode_lengths)),
         "mean_sim_time": float(np.mean(episode_sim_times)),
+        "survival_rate": survival_rate,
     }
 
 
@@ -159,6 +167,7 @@ def _print_summary(results: dict) -> None:
     print(f"  Max hits        : {results['max_hits']}")
     print(f"  Mean sim time   : {results['mean_sim_time']:.2f}s")
     print(f"  Mean ep length  : {results['mean_length']:.0f} steps")
+    print(f"  Survival rate   : {results['survival_rate']:.0%}")
 
 
 def _setup_meshcat():
