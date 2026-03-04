@@ -211,4 +211,5 @@ __marimo__/
 data/
 logs/
 .DS_Store
+**/.DS_Store
 *.pdf
