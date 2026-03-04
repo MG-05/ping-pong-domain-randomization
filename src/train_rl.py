@@ -176,6 +176,7 @@ def main() -> int:
             args.resume,
             env=train_env,
             tensorboard_log=str(log_dir),
+            device="cuda",
         )
         model.learning_rate = args.lr
     else:
@@ -192,6 +193,7 @@ def main() -> int:
             tensorboard_log=str(log_dir),
             verbose=1,
             seed=args.seed,
+            device="cuda",
         )
 
     callbacks = [
