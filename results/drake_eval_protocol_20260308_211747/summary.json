@@ -1,0 +1,117 @@
+{
+  "run_started": "2026-03-08T21:17:47",
+  "run_finished": "2026-03-08T21:22:53",
+  "elapsed_sec": 305.6917598247528,
+  "n_conditions": 4,
+  "n_episode_rows": 480,
+  "summary": [
+    {
+      "n_episodes": 120,
+      "mean_reward": -3.5985546298141027,
+      "std_reward": 1.3322676295501878e-15,
+      "mean_hits": 0.0,
+      "std_hits": 0.0,
+      "max_hits": 0,
+      "min_hits": 0,
+      "mean_length": 101.0,
+      "mean_sim_time": 1.0100000000000011,
+      "survival_rate": 0.0,
+      "mean_reward_ci95": [
+        -3.598554629814103,
+        -3.5985546298141022
+      ],
+      "mean_hits_ci95": [
+        0.0,
+        0.0
+      ],
+      "mean_sim_time_ci95": [
+        1.0100000000000011,
+        1.0100000000000011
+      ],
+      "model_label": "Nominal",
+      "model_path": "/Users/jonathanzhang/School/cs291k/ping-pong-domain-randomization/sac_baseline_final.zip",
+      "physics": "nominal"
+    },
+    {
+      "n_episodes": 120,
+      "mean_reward": -3.187834812887915,
+      "std_reward": 1.3782740654323595,
+      "mean_hits": 0.08333333333333333,
+      "std_hits": 0.2763853991962833,
+      "max_hits": 1,
+      "min_hits": 0,
+      "mean_length": 100.6,
+      "mean_sim_time": 1.0060000000000007,
+      "survival_rate": 0.0,
+      "mean_reward_ci95": [
+        -3.434439332934722,
+        -2.941230292841108
+      ],
+      "mean_hits_ci95": [
+        0.033881710883074304,
+        0.13278495578359234
+      ],
+      "mean_sim_time_ci95": [
+        1.005093536787534,
+        1.0069064632124674
+      ],
+      "model_label": "Nominal",
+      "model_path": "/Users/jonathanzhang/School/cs291k/ping-pong-domain-randomization/sac_baseline_final.zip",
+      "physics": "randomized"
+    },
+    {
+      "n_episodes": 120,
+      "mean_reward": 1392.4776213953264,
+      "std_reward": 0.0,
+      "mean_hits": 121.0,
+      "std_hits": 0.0,
+      "max_hits": 121,
+      "min_hits": 121,
+      "mean_length": 2000.0,
+      "mean_sim_time": 20.000000000000334,
+      "survival_rate": 1.0,
+      "mean_reward_ci95": [
+        1392.4776213953264,
+        1392.4776213953264
+      ],
+      "mean_hits_ci95": [
+        121.0,
+        121.0
+      ],
+      "mean_sim_time_ci95": [
+        20.000000000000334,
+        20.000000000000334
+      ],
+      "model_label": "Robust",
+      "model_path": "/Users/jonathanzhang/School/cs291k/ping-pong-domain-randomization/sac_robust_final.zip",
+      "physics": "nominal"
+    },
+    {
+      "n_episodes": 120,
+      "mean_reward": 545.7543573232692,
+      "std_reward": 612.0274248229368,
+      "mean_hits": 49.15833333333333,
+      "std_hits": 53.68177776386405,
+      "max_hits": 136,
+      "min_hits": 2,
+      "mean_length": 879.7666666666667,
+      "mean_sim_time": 8.797666666666752,
+      "survival_rate": 0.31666666666666665,
+      "mean_reward_ci95": [
+        436.24875670341146,
+        655.259957943127
+      ],
+      "mean_hits_ci95": [
+        39.55344460130579,
+        58.76322206536087
+      ],
+      "mean_sim_time_ci95": [
+        7.268139557192596,
+        10.327193776140907
+      ],
+      "model_label": "Robust",
+      "model_path": "/Users/jonathanzhang/School/cs291k/ping-pong-domain-randomization/sac_robust_final.zip",
+      "physics": "randomized"
+    }
+  ]
+}

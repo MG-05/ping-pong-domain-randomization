@@ -262,7 +262,7 @@ def main() -> int:
     parser.add_argument(
         "--episodes",
         type=int,
-        default=100,
+        default=120,
         help="Episodes per (model, physics) condition.",
     )
     parser.add_argument(
