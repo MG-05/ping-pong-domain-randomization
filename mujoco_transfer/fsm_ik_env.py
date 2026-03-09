@@ -6,6 +6,8 @@ import os
 import tempfile
 import time
 from typing import Any
+import gymnasium as gym
+from gymnasium import spaces
 
 import numpy as np
 
@@ -37,7 +39,7 @@ DEFAULT_Q0 = np.array([-0.2, 0.79, 0.32, -1.76, -0.36, -0.95, 1.63], dtype=float
 @dataclass
 class MujocoFsmIkConfig:
     physics_dt: float = 0.001
-    control_dt: float = 0.001
+    control_dt: float = 0.01
     max_episode_time: float = 20.0
     min_ball_height: float = 0.08
     # Tuned for high-hit nominal behavior with reduced control jitter.
@@ -49,15 +51,29 @@ class MujocoFsmIkConfig:
     contact_force_scale: float = 1.0
     hit_force_threshold: float = 0.05
     hit_min_ball_height: float = 0.20
-    hit_debounce_s: float = 0.008
+    hit_debounce_s: float = 0.1  # Match Drake's 10 steps * 0.01s cooldown
     ball_init_pos: tuple[float, float, float] = (0.77, -0.03, 0.70)
-    ball_init_pos_noise: float = 0.0
+    ball_init_pos_noise: float = 0.04  # Match Drake's noise level
+    max_residual_rad: float = 0.15
+    residual_scale: float = 0.5
+    reward_alive: float = 0.01
+    reward_hit: float = 5.0
+    reward_apex: float = 2.0
+    penalty_drop: float = 5.0
+    target_apex_height: float = 0.55
+
+    # Domain Randomization Bounds
+    randomize_dynamics: bool = True
+    ball_mass_range: tuple[float, float] = (0.002, 0.0035)
+    ball_friction_range: tuple[float, float] = (0.15, 0.30)
+    # MuJoCo uses solref damping ratio for bounciness (lower = more bounce)
+    ball_damping_ratio_range: tuple[float, float] = (0.05, 0.15)
 
 
 TrajectoryFrame = tuple[np.ndarray, np.ndarray, float]
 
 
-class MujocoFsmIkEnv:
+class MujocoFsmIkEnv(gym.Env):
     """Run Drake's FSM/IK policy inside MuJoCo dynamics."""
 
     def __init__(
@@ -66,6 +82,7 @@ class MujocoFsmIkEnv:
         config: MujocoFsmIkConfig | None = None,
         scenario_yaml: str | None = None,
     ) -> None:
+        super().__init__()
         self._cfg = config or MujocoFsmIkConfig()
         self._model_path = str(Path(model_path).resolve())
         self.model = mujoco.MjModel.from_xml_path(self._model_path)
@@ -117,7 +134,15 @@ class MujocoFsmIkEnv:
         self._fsm = FSMController(q0=self._q_home, scenario_yaml=self._scenario_yaml)
         self._fsm_context = self._fsm.CreateDefaultContext()
 
-    def reset(self, seed: int | None = None) -> dict[str, Any]:
+        self.observation_space = spaces.Box(
+            low=-np.inf, high=np.inf, shape=(20,), dtype=np.float64 # OBS_DIM is 20
+        )
+        self.action_space = spaces.Box(
+            low=-1.0, high=1.0, shape=(7,), dtype=np.float64 # IIWA_NUM_JOINTS is 7
+        )
+
+    def reset(self, seed: int | None = None, options: dict | None = None) -> tuple[np.ndarray, dict[str, Any]]:
+        super().reset(seed=seed)
         if seed is not None:
             self._rng = np.random.default_rng(seed)
 
@@ -150,9 +175,36 @@ class MujocoFsmIkEnv:
         self._physics_step_count = 0
         self._contact_hit_count = 0
         self._last_contact_hit_time = -np.inf
+
+        # --- Dynamic Domain Randomization ---
+        if self._cfg.randomize_dynamics:
+            # Randomize Mass
+            new_mass = self._rng.uniform(*self._cfg.ball_mass_range)
+            self.model.body_mass[self._ball_body_id] = new_mass
+
+            # Recompute inertia for the new mass (assuming solid sphere: I = 2/5 * m * r^2)
+            r = 0.02 # radius from XML
+            new_inertia = (2.0 / 5.0) * new_mass * (r ** 2)
+            self.model.body_inertia[self._ball_body_id] = np.array([new_inertia, new_inertia, new_inertia])
+
+            # Randomize Friction (sliding, torsional, rolling)
+            # MuJoCo geom_friction is a 3-element array per geom
+            new_friction = self._rng.uniform(*self._cfg.ball_friction_range)
+            self.model.geom_friction[self._ball_geom_id][0] = new_friction # sliding
+            self.model.geom_friction[self._ball_geom_id][1] = 0.003        # torsional (keep static or randomize)
+            self.model.geom_friction[self._ball_geom_id][2] = 0.0001       # rolling (keep static or randomize)
+
+            # Randomize Restitution (Bounciness) via solref
+            # solref is [timeconst, dampratio]. We randomize the dampratio.
+            new_damping = self._rng.uniform(*self._cfg.ball_damping_ratio_range)
+            self.model.geom_solref[self._ball_geom_id][1] = new_damping
+        # -----------------------------------------
+
         mujoco.mj_forward(self.model, self.data)
         self._ensure_ball_clear_of_contacts()
-        return self.get_info()
+        self._prev_hit_count = 0
+        self._prev_ball_vz = 0.0
+        return self._get_obs(), self.get_info()
 
     def run_episode(
         self,
@@ -236,6 +288,89 @@ class MujocoFsmIkEnv:
             return True, "ball_dropped"
         return False, "running"
 
+    def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
+        # 1. Scale residual action exactly like Drake
+        action = np.asarray(action, dtype=float).flatten()[:7]
+        residual = (
+            self._cfg.residual_scale
+            * self._cfg.max_residual_rad
+            * np.clip(action, -1.0, 1.0)
+        )
+
+        # 2. Get base FSM command
+        q, v = self._read_iiwa_state()
+        fsm_q_cmd = self._eval_fsm(q=q, v=v)
+        
+        # 3. Apply residual and bounds
+        q_cmd = np.clip(
+            fsm_q_cmd + residual,
+            self._fsm._iiwa_q_lower,
+            self._fsm._iiwa_q_upper
+        )
+
+        # 4. Apply torque and step physics
+        self._apply_joint_pd(q_cmd=q_cmd, q=q, v=v)
+        for _ in range(self._substeps_per_control):
+            mujoco.mj_step(self.model, self.data)
+            
+        self._sim_time += self._cfg.control_dt
+        self._step_count += 1
+        self._update_contact_hit_count()
+
+        # 5. Gather Returns
+        obs = self._get_obs()
+        reward, terminated = self._compute_reward(obs)
+        truncated = self._sim_time >= self._cfg.max_episode_time
+
+        return obs, reward, terminated, truncated, self.get_info()
+    
+    def _get_obs(self) -> np.ndarray:
+        q, v = self._read_iiwa_state()
+        
+        # In MuJoCo, ball xpos is index 0:3
+        ball_pos = np.asarray(self.data.xpos[self._ball_body_id], dtype=np.float64)
+        
+        # In MuJoCo, freejoint qvel is [vx, vy, vz, wx, wy, wz]. We just want vx, vy, vz.
+        ball_vel = np.asarray(
+            self.data.qvel[self._ball_qvel_adr : self._ball_qvel_adr + 3], dtype=np.float64
+        )
+        
+        return np.concatenate([q, v, ball_pos, ball_vel])
+
+    def _compute_reward(self, obs: np.ndarray) -> tuple[float, bool]:
+        # Indices based on PingPongResidualEnv
+        IDX_BALL_Z = 16
+        IDX_BALL_VZ = 19
+        
+        ball_z = float(obs[IDX_BALL_Z])
+        ball_vz = float(obs[IDX_BALL_VZ])
+        cfg = self._cfg
+        reward = 0.0
+
+        if ball_z > cfg.min_ball_height:
+            reward += cfg.reward_alive
+
+        # We can use the hit logic already tracked by MuJoCo
+        is_new_hit = False
+        if self._contact_hit_count > self._prev_hit_count:
+            is_new_hit = True
+            self._prev_hit_count = self._contact_hit_count
+            reward += cfg.reward_hit
+
+        # Detect apex (ball was going up, now going down)
+        if hasattr(self, '_prev_ball_vz'):
+            if self._prev_ball_vz > 0.05 and ball_vz <= 0.05 and ball_z > 0.25:
+                apex_err = abs(ball_z - cfg.target_apex_height)
+                reward += cfg.reward_apex * np.exp(-10.0 * apex_err ** 2)
+
+        self._prev_ball_vz = ball_vz
+
+        terminated = ball_z < cfg.min_ball_height
+        if terminated:
+            reward -= cfg.penalty_drop
+
+        return reward, terminated
+    
     def get_info(self) -> dict[str, Any]:
         return {
             "sim_time": self._sim_time,
