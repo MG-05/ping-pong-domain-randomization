@@ -15,16 +15,19 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluate Trained RL Ping-Pong Policy in MuJoCo")
     parser.add_argument("--env-model", type=str, default="mujoco_transfer/models/iiwa_wsg_paddle_ball.xml", help="Path to MuJoCo XML")
     parser.add_argument("--rl-weights", type=str, required=True, help="Path to trained RL model weights (.zip)")
-    parser.add_argument("--algo", type=str, default="PPO", choices=["PPO", "SAC"], help="RL Algorithm used")
+    parser.add_argument("--algo", type=str, default="SAC", choices=["PPO", "SAC"], help="RL Algorithm used")
     parser.add_argument("--episodes", type=int, default=10, help="Number of evaluation episodes")
     parser.add_argument("--render", action="store_true", help="Render the simulation visually")
     parser.add_argument("--realtime", action="store_true", help="Slow down rendering to real-time")
-    parser.add_argument("--out", type=str, default=None, help="Path to save report (e.g., results.json or results.csv)")
+    parser.add_argument("--out", type=str, default=None, help="Path to save report")
+    parser.add_argument("--dr", action="store_true", help="Enable Domain Randomization in MuJoCo environment") # DR toggle
+    args = parser.parse_args()
     args = parser.parse_args()
 
     # 1. Initialize the Environment with Domain Randomization
     cfg = MujocoFsmIkConfig(
         randomize_dynamics=True,
+        control_dt=0.01,
         # Default tuning parameters from your PID tuning
         kp=3500.0,
         kd=14.0,

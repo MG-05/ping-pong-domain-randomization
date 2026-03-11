@@ -39,19 +39,19 @@ DEFAULT_Q0 = np.array([-0.2, 0.79, 0.32, -1.76, -0.36, -0.95, 1.63], dtype=float
 @dataclass
 class MujocoFsmIkConfig:
     physics_dt: float = 0.001
-    control_dt: float = 0.01
+    control_dt: float = 0.001  # FSM requires 1ms control for MuJoCo (Drake uses 10ms)
     max_episode_time: float = 20.0
     min_ball_height: float = 0.08
-    # Tuned for high-hit nominal behavior with reduced control jitter.
-    kp: float = 3500.0
-    kd: float = 14.0
-    torque_limit: float = 400.0
+    # Tuned PID gains from pid_tuning_results_control1ms.json
+    kp: float = 4017.8
+    kd: float = 15.7
+    torque_limit: float = 347.6
     use_bias_compensation: bool = False
     bias_compensation_scale: float = 1.0
     contact_force_scale: float = 1.0
     hit_force_threshold: float = 0.05
     hit_min_ball_height: float = 0.20
-    hit_debounce_s: float = 0.1  # Match Drake's 10 steps * 0.01s cooldown
+    hit_debounce_s: float = 0.1  # Debounce for proper hit counting
     ball_init_pos: tuple[float, float, float] = (0.77, -0.03, 0.70)
     ball_init_pos_noise: float = 0.04  # Match Drake's noise level
     max_residual_rad: float = 0.15
@@ -63,7 +63,7 @@ class MujocoFsmIkConfig:
     target_apex_height: float = 0.55
 
     # Domain Randomization Bounds
-    randomize_dynamics: bool = True
+    randomize_dynamics: bool = False
     ball_mass_range: tuple[float, float] = (0.002, 0.0035)
     ball_friction_range: tuple[float, float] = (0.15, 0.30)
     # MuJoCo uses solref damping ratio for bounciness (lower = more bounce)
@@ -204,6 +204,7 @@ class MujocoFsmIkEnv(gym.Env):
         self._ensure_ball_clear_of_contacts()
         self._prev_hit_count = 0
         self._prev_ball_vz = 0.0
+        self._last_q_cmd = None
         return self._get_obs(), self.get_info()
 
     def run_episode(
@@ -257,27 +258,24 @@ class MujocoFsmIkEnv(gym.Env):
         trajectory: list[TrajectoryFrame] | None = None,
         trajectory_stride: int = 1,
     ) -> tuple[bool, str]:
+        # Evaluated continuously at 1000 Hz
         q, v = self._read_iiwa_state()
         q_cmd = self._eval_fsm(q=q, v=v)
         self._apply_joint_pd(q_cmd=q_cmd, q=q, v=v)
 
-        for _ in range(self._substeps_per_control):
-            t0 = time.perf_counter()
-            mujoco.mj_step(self.model, self.data)
-            self._physics_step_count += 1
-            if (
-                trajectory is not None
-                and trajectory_stride > 0
-                and self._physics_step_count % trajectory_stride == 0
-            ):
-                self._append_trajectory_frame(trajectory)
-            if viewer_handle is not None:
-                viewer_handle.sync()
-            if realtime:
-                dt = self.model.opt.timestep
-                elapsed = time.perf_counter() - t0
-                if elapsed < dt:
-                    time.sleep(dt - elapsed)
+        t0 = time.perf_counter()
+        mujoco.mj_step(self.model, self.data)
+        self._physics_step_count += 1
+
+        if trajectory is not None and trajectory_stride > 0 and self._physics_step_count % trajectory_stride == 0:
+            self._append_trajectory_frame(trajectory)
+        if viewer_handle is not None:
+            viewer_handle.sync()
+        if realtime:
+            dt = self.model.opt.timestep
+            elapsed = time.perf_counter() - t0
+            if elapsed < dt:
+                time.sleep(dt - elapsed)
 
         self._sim_time += self._cfg.control_dt
         self._step_count += 1
@@ -297,25 +295,36 @@ class MujocoFsmIkEnv(gym.Env):
             * np.clip(action, -1.0, 1.0)
         )
 
-        # 2. Get base FSM command
-        q, v = self._read_iiwa_state()
-        fsm_q_cmd = self._eval_fsm(q=q, v=v)
+        curr_q, curr_v = self._read_iiwa_state()
         
-        # 3. Apply residual and bounds
-        q_cmd = np.clip(
+        # 2. Get the new target at 100Hz
+        fsm_q_cmd = self._eval_fsm(q=curr_q, v=curr_v)
+        target_q_cmd = np.clip(
             fsm_q_cmd + residual,
             self._fsm._iiwa_q_lower,
             self._fsm._iiwa_q_upper
         )
 
-        # 4. Apply torque and step physics
-        self._apply_joint_pd(q_cmd=q_cmd, q=q, v=v)
-        for _ in range(self._substeps_per_control):
+        # 3. Initialize previous command if first step
+        if getattr(self, '_last_q_cmd', None) is None:
+            self._last_q_cmd = curr_q.copy()
+
+        # 4. Step physics with Linear Interpolation (First-Order Hold)
+        for i in range(self._substeps_per_control):
+            frac = (i + 1) / self._substeps_per_control
+            interp_q_cmd = self._last_q_cmd + frac * (target_q_cmd - self._last_q_cmd)
+            
+            step_q, step_v = self._read_iiwa_state()
+            self._apply_joint_pd(q_cmd=interp_q_cmd, q=step_q, v=step_v)
             mujoco.mj_step(self.model, self.data)
             
-        self._sim_time += self._cfg.control_dt
+            self._physics_step_count += 1
+            self._sim_time += self.model.opt.timestep
+            self._update_contact_hit_count()
+
+        # Save target command for the next step's interpolation
+        self._last_q_cmd = target_q_cmd.copy()
         self._step_count += 1
-        self._update_contact_hit_count()
 
         # 5. Gather Returns
         obs = self._get_obs()
