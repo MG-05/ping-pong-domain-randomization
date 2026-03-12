@@ -41,6 +41,7 @@ C_ORANGE = "#DD8452"
 C_GREEN = "#55A868"
 C_RED = "#C44E52"
 C_PURPLE = "#8172B2"
+LABEL_BBOX = dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="none", alpha=0.9)
 
 
 def plot_hits_comparison():
@@ -65,7 +66,8 @@ def plot_hits_comparison():
             h = bar.get_height()
             if h > 10:
                 ax.annotate(f"{h:.0f}", xy=(bar.get_x() + bar.get_width()/2, h),
-                            xytext=(0, 5), textcoords="offset points", ha="center", fontsize=8)
+                            xytext=(0, 8), textcoords="offset points", ha="center", va="bottom",
+                            fontsize=8, zorder=6, bbox=LABEL_BBOX, clip_on=False)
     fig.tight_layout()
     fig.savefig(RESULTS_DIR / "final_hits_comparison.png", dpi=150)
     plt.close(fig)
@@ -98,9 +100,11 @@ def plot_learning_curves():
     ax1.set_xticks(steps_k)
     for i, (nn, rn) in enumerate(zip(nom_nom, rob_nom)):
         ax1.annotate(f"{nn:.0f}", (steps_k[i], nn), textcoords="offset points",
-                     xytext=(8, 5), fontsize=9, color=C_BLUE, fontweight="bold")
+                     xytext=(8, 8), fontsize=9, color=C_BLUE, fontweight="bold",
+                     bbox=LABEL_BBOX, zorder=6, clip_on=False)
         ax1.annotate(f"{rn:.0f}", (steps_k[i], rn), textcoords="offset points",
-                     xytext=(8, -12), fontsize=9, color=C_GREEN, fontweight="bold")
+                     xytext=(8, -12), fontsize=9, color=C_GREEN, fontweight="bold",
+                     bbox=LABEL_BBOX, zorder=6, clip_on=False)
 
     # Randomized physics
     ax2.errorbar(steps_k, nom_rand, yerr=nom_rand_std, fmt="o-", color=C_BLUE,
@@ -115,10 +119,12 @@ def plot_learning_curves():
     ax2.grid(alpha=0.3)
     ax2.set_xticks(steps_k)
     for i, (nr, rr) in enumerate(zip(nom_rand, rob_rand)):
-        ax2.annotate(f"{nr:.0f}", (steps_k[i], nr), textcoords="offset points",
-                     xytext=(8, 5), fontsize=9, color=C_BLUE, fontweight="bold")
-        ax2.annotate(f"{rr:.0f}", (steps_k[i], rr), textcoords="offset points",
-                     xytext=(8, -12), fontsize=9, color=C_GREEN, fontweight="bold")
+        ax2.annotate(f"{nr:.0f}", (steps_k[i], nr + nom_rand_std[i]), textcoords="offset points",
+                     xytext=(8, 6), fontsize=9, color=C_BLUE, fontweight="bold",
+                     bbox=LABEL_BBOX, zorder=6, clip_on=False)
+        ax2.annotate(f"{rr:.0f}", (steps_k[i], rr + rob_rand_std[i]), textcoords="offset points",
+                     xytext=(8, 6), fontsize=9, color=C_GREEN, fontweight="bold",
+                     bbox=LABEL_BBOX, zorder=6, clip_on=False)
 
     fig.suptitle("Learning Curves: Hits vs Training Budget", fontsize=15, fontweight="bold", y=1.02)
     fig.tight_layout()
@@ -143,10 +149,11 @@ def plot_degradation():
     ax.grid(axis="y", alpha=0.3)
 
     for bar, val in zip(bars, pct):
-        y_off = 2 if val >= 0 else -4
+        y_off = 3 if val >= 0 else -3
+        va = "bottom" if val >= 0 else "top"
         ax.annotate(f"{val:+.1f}%", xy=(bar.get_x() + bar.get_width()/2, bar.get_height()),
-                    xytext=(0, y_off), textcoords="offset points", ha="center", va="bottom",
-                    fontsize=11, fontweight="bold")
+                    xytext=(0, y_off), textcoords="offset points", ha="center", va=va,
+                    fontsize=11, fontweight="bold", bbox=LABEL_BBOX, zorder=6, clip_on=False)
     fig.tight_layout()
     fig.savefig(RESULTS_DIR / "final_degradation.png", dpi=150)
     plt.close(fig)
@@ -164,14 +171,16 @@ def plot_variance():
     ax1.set_title("Absolute Variance (Randomized Physics)", fontsize=13, fontweight="bold")
     ax1.grid(axis="y", alpha=0.3)
     for i, v in enumerate(RAND_STD):
-        ax1.text(i, v + 1, f"{v:.1f}", ha="center", fontsize=9, fontweight="bold")
+        ax1.text(i, v + 1, f"{v:.1f}", ha="center", fontsize=9, fontweight="bold",
+                 bbox=LABEL_BBOX, zorder=6, clip_on=False)
 
     ax2.bar(SHORT_LABELS, cv, color=nom_colors, alpha=0.85, edgecolor="black", linewidth=0.5)
     ax2.set_ylabel("Coefficient of Variation (%)", fontsize=11)
     ax2.set_title("Relative Variance (lower = more consistent)", fontsize=13, fontweight="bold")
     ax2.grid(axis="y", alpha=0.3)
     for i, v in enumerate(cv):
-        ax2.text(i, v + 1, f"{v:.1f}%", ha="center", fontsize=9, fontweight="bold")
+        ax2.text(i, v + 1, f"{v:.1f}%", ha="center", fontsize=9, fontweight="bold",
+                 bbox=LABEL_BBOX, zorder=6, clip_on=False)
 
     fig.suptitle("Consistency Under Domain Randomization", fontsize=14, fontweight="bold", y=1.02)
     fig.tight_layout()
@@ -226,7 +235,8 @@ def plot_survival_time():
 
     for i in range(len(SHORT_LABELS)):
         for val, xpos in [(nom_t[i], x[i] - w/2), (rand_t[i], x[i] + w/2)]:
-            ax.text(xpos, val + 0.3, f"{val:.1f}s", ha="center", fontsize=8)
+            ax.text(xpos, val + 0.4, f"{val:.1f}s", ha="center", fontsize=8,
+                    bbox=LABEL_BBOX, zorder=6, clip_on=False)
 
     fig.tight_layout()
     fig.savefig(RESULTS_DIR / "final_survival_time.png", dpi=150)
