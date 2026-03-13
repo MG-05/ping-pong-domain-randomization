@@ -1,0 +1,62 @@
+{
+  "timestamp": "20260312_155025",
+  "n_episodes_per_condition": 500,
+  "seeds": "0\u2013499",
+  "model_xml": "/Users/jonathanzhang/School/cs291k/ping-pong-domain-randomization/mujoco_transfer/models/iiwa_wsg_paddle_ball.xml",
+  "conditions": [
+    {
+      "condition": "FSM Baseline (Nominal)",
+      "model_label": "FSM Baseline",
+      "physics": "nominal",
+      "randomize": false,
+      "residual_scale": null,
+      "rl_control_dt": null,
+      "model_path": null
+    },
+    {
+      "condition": "FSM Baseline (Randomized)",
+      "model_label": "FSM Baseline",
+      "physics": "randomized",
+      "randomize": true,
+      "residual_scale": 0.0,
+      "rl_control_dt": 0.001,
+      "model_path": "fsm_zero"
+    },
+    {
+      "condition": "Nominal (Nominal Physics)",
+      "model_label": "Nominal SAC",
+      "physics": "nominal",
+      "randomize": false,
+      "residual_scale": 0.005,
+      "rl_control_dt": 0.01,
+      "model_path": "/Users/jonathanzhang/School/cs291k/ping-pong-domain-randomization/mujoco_transfer/sac_nom_1m.zip"
+    },
+    {
+      "condition": "Nominal (Randomized Physics)",
+      "model_label": "Nominal SAC",
+      "physics": "randomized",
+      "randomize": true,
+      "residual_scale": 0.005,
+      "rl_control_dt": 0.01,
+      "model_path": "/Users/jonathanzhang/School/cs291k/ping-pong-domain-randomization/mujoco_transfer/sac_nom_1m.zip"
+    },
+    {
+      "condition": "Robust (Nominal Physics)",
+      "model_label": "Robust SAC",
+      "physics": "nominal",
+      "randomize": false,
+      "residual_scale": 0.01,
+      "rl_control_dt": 0.005,
+      "model_path": "/Users/jonathanzhang/School/cs291k/ping-pong-domain-randomization/models/sac_robust_1m/sac_final.zip"
+    },
+    {
+      "condition": "Robust (Randomized Physics)",
+      "model_label": "Robust SAC",
+      "physics": "randomized",
+      "randomize": true,
+      "residual_scale": 0.01,
+      "rl_control_dt": 0.005,
+      "model_path": "/Users/jonathanzhang/School/cs291k/ping-pong-domain-randomization/models/sac_robust_1m/sac_final.zip"
+    }
+  ]
+}

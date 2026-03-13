@@ -9,7 +9,7 @@ import numpy as np
 from stable_baselines3 import PPO, SAC 
 
 import mujoco
-from mujoco_transfer.fsm_ik_env import MujocoFsmIkEnv, MujocoFsmIkConfig
+from mujoco_transfer.residual_env_mujoco import MujocoResidualEnv, MujocoResidualConfig
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate Trained RL Ping-Pong Policy in MuJoCo")
@@ -20,21 +20,23 @@ def main():
     parser.add_argument("--render", action="store_true", help="Render the simulation visually")
     parser.add_argument("--realtime", action="store_true", help="Slow down rendering to real-time")
     parser.add_argument("--out", type=str, default=None, help="Path to save report")
-    parser.add_argument("--dr", action="store_true", help="Enable Domain Randomization in MuJoCo environment") # DR toggle
-    args = parser.parse_args()
+    parser.add_argument("--randomize", action=argparse.BooleanOptionalAction, default=False,
+                        help="Enable domain randomization (--randomize / --no-randomize)")
+    parser.add_argument("--residual-scale", type=float, default=None,
+                        help="Residual action scale (default: 0.005 nominal, use 0.01 for robust)")
+    parser.add_argument("--rl-control-dt", type=float, default=None,
+                        help="RL action period in seconds (default: 0.01; use 0.005 for robust)")
     args = parser.parse_args()
 
-    # 1. Initialize the Environment with Domain Randomization
-    cfg = MujocoFsmIkConfig(
-        randomize_dynamics=True,
-        control_dt=0.01,
-        # Default tuning parameters from your PID tuning
-        kp=3500.0,
-        kd=14.0,
-        torque_limit=400.0
-    )
-    
-    env = MujocoFsmIkEnv(model_path=args.env_model, config=cfg)
+    # 1. Initialize the Environment
+    cfg_kwargs = dict(randomize_dynamics=args.randomize)
+    if args.residual_scale is not None:
+        cfg_kwargs["residual_scale"] = args.residual_scale
+    if args.rl_control_dt is not None:
+        cfg_kwargs["rl_control_dt"] = args.rl_control_dt
+    cfg = MujocoResidualConfig(**cfg_kwargs)
+
+    env = MujocoResidualEnv(model_path=args.env_model, config=cfg)
 
     # 2. Load the Trained Model
     print(f"Loading {args.algo} model from {args.rl_weights}...")
