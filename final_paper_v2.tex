@@ -15,11 +15,13 @@
 \usepackage{flushend}
 \usepackage{enumitem}
 \usepackage{dblfloatfix}
+\usepackage{tikz}
+\usetikzlibrary{automata,positioning,arrows.meta}
 
 \title{Robot Ping-Pong Control Under Physics Variation:\\
 Domain Randomization and Residual Reinforcement Learning}
 \author{
-Julia Novick \quad Jonathan Zhang \quad Mayand Gulati \quad Sagnik Biswas\\[4pt]
+Julia Novick\thanks{All authors contributed equally to this work.} \quad Jonathan Zhang \quad Mayand Gulati \quad Sagnik Biswas\\[4pt]
 \normalsize UC Santa Barbara
 }
 \date{March 12, 2026}
@@ -221,7 +223,7 @@ Two training tracks are used:
 \end{itemize}
 
 \subsection{Domain Randomization Mechanism}
-\texttt{src/utils/randomization.py} samples parameters and writes randomized model/scenario files before each robust episode.
+\texttt{src/utils/randomization.py} samples parameters from the ranges in Table~\ref{tab:dr_ranges} and writes randomized model/scenario files before each robust episode.
 
 \begin{table}[t]
 \centering
@@ -325,33 +327,99 @@ This scaffolding is crucial in graduate-level projects because it enables post-h
 \subsection{Domain Randomization as Scenario Generation}
 Randomization is implemented by sampling parameters and writing randomized model/scenario files used at environment reset. This means perturbations alter actual simulation artifacts (not merely internal coefficients) and better reflect realistic structural variation in contact dynamics.
 
-\subsection{FSM Inner Loop: Why It Matters for Residual Learning}
-The FSM controller provides a sequence of task-relevant phases (e.g., intercept planning, strike timing, follow-through). Conceptually, this contributes three benefits to residual learning:
+\subsection{FSM Controller Architecture}
+The baseline controller is a six-state finite state machine (Figure~\ref{fig:fsm_diagram}) implemented in \texttt{src/controllers/fsm\_controller.py}. Each state maps to a distinct phase of the ping-pong rally cycle:
+
 \begin{itemize}[leftmargin=*,noitemsep]
-    \item \textbf{Trajectory feasibility prior:} IK-generated targets keep the arm in physically meaningful postures.
-    \item \textbf{Temporal prior:} strike windows are aligned with predicted ball intercept timing.
-    \item \textbf{Contact prior:} the controller already encodes an intended contact geometry.
+    \item \textbf{WAIT}: holds the home joint configuration; monitors ball state for planning conditions (ball descending, above minimum height, cooldown expired).
+    \item \textbf{PLAN}: predicts a ballistic intercept at the target hit height (\(0.38\) m), computes desired paddle pose and normal, and solves IK for three waypoints (prehit, hit, follow-through). Transitions to PREHIT on success or RECOVER on failure.
+    \item \textbf{PREHIT}: interpolates the arm from its current configuration toward the prehit waypoint. May replan if time permits. Transitions to STRIKE at the scheduled strike start time.
+    \item \textbf{STRIKE}: executes a timed linear interpolation through prehit\(\to\)hit\(\to\)follow waypoints. Detects contact via force threshold or ball velocity reversal.
+    \item \textbf{FOLLOW\_THROUGH}: holds the follow-through pose briefly (\(\sim\!0.10\) s), then returns to WAIT.
+    \item \textbf{RECOVER}: returns to home pose when planning fails or a strike is missed; transitions to WAIT once joint position and velocity are within tolerance of home.
 \end{itemize}
-As a result, residual SAC is not learning table tennis from scratch; it is learning \emph{how to improve} an already competent policy.
 
-\subsection{IK and Planning Constraints (Conceptual)}
-Even without exposing all solver internals in this paper, the implementation reflects a constrained optimization structure: solve for arm configurations near a seed joint state while satisfying kinematic and timing constraints. This produces smooth command sequences that are then corrected by residual actions.
+\begin{figure}[t]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[
+    ->,>=Stealth,
+    node distance=1.4cm and 1.6cm,
+    every state/.style={draw,rounded corners,minimum size=0.7cm,font=\footnotesize\bfseries,inner sep=2pt},
+    every edge/.append style={font=\tiny}
+]
+\node[state] (W) {WAIT};
+\node[state,right=of W] (P) {PLAN};
+\node[state,right=of P] (PH) {PREHIT};
+\node[state,below=of PH] (S) {STRIKE};
+\node[state,left=of S] (FT) {FOLLOW};
+\node[state,below=of W] (R) {RECOVER};
 
-In theory language, the baseline maps state to a low-dimensional manifold of plausible commands. The residual policy explores locally around this manifold. This is one reason residual RL can be data-efficient in robotics.
+\path (W)  edge node[above]{ball ready} (P)
+      (P)  edge node[above]{IK ok} (PH)
+      (P)  edge node[left]{IK fail} (R)
+      (PH) edge node[right]{$t\!\ge\!t_{\mathrm{strike}}$} (S)
+      (PH) edge[bend right=20] node[below,sloped]{\footnotesize miss} (R)
+      (S)  edge node[above]{hit/timeout} (FT)
+      (FT) edge node[above]{done} (W)
+      (R)  edge node[left]{recovered} (W);
+\end{tikzpicture}%
+}
+\caption{FSM state diagram for the baseline controller. Transitions are driven by ball tracking, IK feasibility, timing schedules, and contact detection.}
+\label{fig:fsm_diagram}
+\end{figure}
+
+This FSM contributes three structural priors that benefit residual learning: a \emph{trajectory feasibility prior} (IK-generated targets keep the arm in physically meaningful postures), a \emph{temporal prior} (strike windows are aligned with predicted intercept timing), and a \emph{contact prior} (the controller encodes an intended paddle-ball contact geometry). As a result, residual SAC learns \emph{how to improve} an already competent policy rather than learning table tennis from scratch.
+
+\subsection{Inverse Kinematics Solver}
+The IK stage within PLAN uses Drake's optimization-based \texttt{InverseKinematics} solver to convert Cartesian strike targets into feasible joint configurations. For each strike, the planner solves IK sequentially for three waypoints: prehit (approach pose), hit (contact pose), and follow-through (exit pose), seeding each solve from the previous solution.
+
+The IK program enforces four constraint types:
+\begin{enumerate}[leftmargin=*,noitemsep]
+    \item \textbf{Joint limits}: bounding-box constraints on all 7 iiwa joints.
+    \item \textbf{Seed window}: each joint is constrained within \(\pm 0.65\) rad of the seed configuration, keeping solutions kinematically smooth.
+    \item \textbf{Position}: the paddle frame origin must be within \(12\) mm of the target Cartesian point.
+    \item \textbf{Orientation}: the paddle normal must be within \(1^\circ\) of the desired strike normal, computed from the incoming ball velocity direction with a tilt gain for directional control.
+\end{enumerate}
+A quadratic cost penalizes deviation from the seed configuration (weight 2.5 per iiwa joint), biasing solutions toward postures close to the current arm state. If the solver fails to find a feasible solution for any waypoint, the FSM transitions to RECOVER rather than executing an infeasible strike.
 
 \subsection{Why Deterministic Evaluation Is Used}
 Evaluation uses deterministic action selection to isolate policy quality from stochastic action sampling noise. This is particularly important when comparing checkpoints, because otherwise performance differences can be confounded by changing policy entropy realization.
 
 However, deterministic evaluation also creates a limitation: under nominal fixed physics, some metrics become near-deterministic (e.g., near-zero standard deviation), reducing visibility into variability. We therefore include randomized evaluation and variance metrics to recover uncertainty information.
 
-\subsection{MuJoCo Transfer Scaffold in Project Scope}
-The repository includes a MuJoCo transfer scaffold (\texttt{mujoco\_transfer/}) with FSM/IK execution and metric logging. In this project phase, it primarily serves as transfer infrastructure rather than a full second-domain RL benchmark.
+\subsection{MuJoCo Sim-to-Sim Transfer}
+To test cross-simulator generalization, we evaluate all policies in a MuJoCo reimplementation of the ping-pong environment (\texttt{mujoco\_transfer/}). Table~\ref{tab:mujoco_transfer} reports 500-episode evaluations. Performance drops substantially across the board compared to Drake (Table~\ref{tab:main_results}), confirming that sim-to-sim transfer is nontrivial even when the nominal task geometry is preserved. The FSM baseline achieves 63 mean hits in MuJoCo nominal physics versus 159 in Drake, reflecting contact-model differences between the two simulators. Figure~\ref{fig:mujoco_results} shows the corresponding hit distributions and degradation profiles.
 
-This scaffold is still scientifically useful: it separates the question ``does the control stack work in Drake?'' from ``how sensitive is it to simulator implementation differences?'' and sets up future sim-to-sim transfer experiments.
+\begin{table}[t]
+\centering
+\caption{MuJoCo sim-to-sim transfer results (500 episodes per condition).}
+\label{tab:mujoco_transfer}
+\small
+\begin{tabular}{lccc}
+\toprule
+Model / Physics & Mean Hits & Std & Survival \\
+\midrule
+FSM Baseline / Nom & 63.0 & 0.0 & 100\% \\
+FSM Baseline / Rand & 26.2 & 15.6 & 15.8\% \\
+Nominal SAC / Nom & 27.2 & 14.3 & 37.6\% \\
+Nominal SAC / Rand & 12.0 & 8.4 & 13.2\% \\
+Robust SAC / Nom & 18.6 & 10.4 & 34.4\% \\
+Robust SAC / Rand & 13.5 & 8.8 & 22.2\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{results/mujoco_eval_protocol_20260312_155025/hits_comparison.png}
+    \caption{MuJoCo sim-to-sim transfer: hit count comparison across models and physics conditions (500 episodes each).}
+    \label{fig:mujoco_results}
+\end{figure}
 
 \section{Results}
 \subsection{FSM Baseline Robustness}
-The baseline controller is strong and should not be treated as a trivial reference.
+The baseline controller is strong and should not be treated as a trivial reference (Table~\ref{tab:fsm_baseline}).
 
 \begin{table}[t]
 \centering
@@ -370,6 +438,8 @@ Stress init (\(\pm\)8 cm) & \(104.3\pm54.9\) & 23/50 (46\%) \\
 \end{table}
 
 \subsection{Main Quantitative Comparison}
+Table~\ref{tab:main_results} summarizes the full evaluation matrix. Four key findings emerge:
+
 \begin{table*}[t]
 \centering
 \caption{20-episode evaluation summary across models and physics conditions.}
@@ -400,20 +470,20 @@ Robust SAC 1M & Randomized & 112.9 & 30.9 & 181 & 2.7 & \(+48.5\%\) \\
 \end{table*}
 
 \textbf{Finding 1 (Absolute performance):}
-Nominal SAC 1M is strongest in raw hit count.
+Nominal SAC 1M is strongest in raw hit count (Table~\ref{tab:main_results}).
 
 \textbf{Finding 2 (Relative robustness):}
-Robust SAC becomes positive in \(\Delta\) at later checkpoints.
+Robust SAC becomes positive in \(\Delta\) at later checkpoints (Figure~\ref{fig:degradation}).
 
 \textbf{Finding 3 (Learning dynamics):}
-Both tracks exhibit a 750k dip and 1M rebound.
+Both tracks exhibit a 750k dip and 1M rebound (Figure~\ref{fig:learning}).
 
 \textbf{Finding 4 (Consistency):}
-Nominal SAC 1M has high randomized variance (\(\sigma=106\)); robust SAC 1M is lower (\(\sigma=30.9\)).
+Nominal SAC 1M has high randomized variance (\(\sigma=106\)); robust SAC 1M is lower (\(\sigma=30.9\)), as shown in Figure~\ref{fig:variance}.
 
 \subsection{Extended Metric Analysis}
 To separate rally quantity from episode duration, we compute mean hit throughput
-\(\rho = H / T\), where \(T\) is mean simulation time.
+\(\rho = H / T\), where \(T\) is mean simulation time (Table~\ref{tab:throughput}).
 
 \begin{table}[t]
 \centering
@@ -435,7 +505,7 @@ Robust 1M & 45.24 & 41.50 \\
 \end{tabular}
 \end{table}
 
-This table clarifies a subtle behavior: robust policies can exhibit short episodes with very high instantaneous hit throughput. Thus, high hit count and long survival are related but not identical objectives in this setup.
+Table~\ref{tab:throughput} clarifies a subtle behavior: robust policies can exhibit short episodes with very high instantaneous hit throughput (see also Figure~\ref{fig:survival}). Thus, high hit count and long survival are related but not identical objectives in this setup.
 
 \subsection{Checkpoint-by-Checkpoint Interpretation}
 \textbf{500k stage.}
@@ -448,7 +518,7 @@ Both nominal and robust trajectories dip in nominal evaluation. Robust 750k is n
 Nominal 1M undergoes a clear breakthrough in absolute hits under both conditions but retains high OOD variance. Robust 1M improves both mean hits and relative perturbation behavior but still trails nominal 1M in absolute peak.
 
 \subsection{Cross-Metric Tensions}
-The results expose three objective tensions:
+The results (Figure~\ref{fig:all_results}) expose three objective tensions:
 \begin{itemize}[leftmargin=*,noitemsep]
     \item \textbf{Peak hits vs perturbation robustness:} nominal 1M dominates one, robust 1M trends better on the other.
     \item \textbf{Throughput vs episode duration:} some policies hit rapidly in shorter windows.
