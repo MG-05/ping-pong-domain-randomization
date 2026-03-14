@@ -1,0 +1,21 @@
+{
+  "best_residual_scale": 0.0,
+  "best_mean_hits": 40.0,
+  "best_std_hits": 0.0,
+  "episodes_per_scale": 1,
+  "scales": [
+    0.0,
+    0.01
+  ],
+  "model_path": "/Users/mayandgulati/src/UCSB/cs291K/ping-pong-domain-randomization/sac_robust_final.zip",
+  "model_xml": "/Users/mayandgulati/src/UCSB/cs291K/ping-pong-domain-randomization/mujoco_transfer/models/iiwa_wsg_paddle_ball.xml",
+  "config": {
+    "rl_control_dt": 0.01,
+    "ball_noise": 0.04,
+    "max_residual_rad": 0.15,
+    "kp": 3500.0,
+    "kd": 14.0,
+    "torque_limit": 400.0,
+    "seed_offset": 0
+  }
+}

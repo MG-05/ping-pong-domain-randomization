@@ -1,0 +1,3 @@
+residual_scale,episodes,mean_hits,std_hits,mean_reward,std_reward,mean_sim_time,survival_rate
+0.0,1,40.0,0.0,226.01037777640616,0.0,20.00000000000146,1.0
+0.01,1,39.0,0.0,221.00513516361772,0.0,20.00000000000146,1.0

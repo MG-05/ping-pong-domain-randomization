@@ -10,6 +10,10 @@ from stable_baselines3 import PPO, SAC
 
 import mujoco
 from mujoco_transfer.residual_env_mujoco import MujocoResidualEnv, MujocoResidualConfig
+from mujoco_transfer.sb3_compat import (
+    install_numpy_pickle_compat_shims,
+    make_legacy_custom_objects,
+)
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate Trained RL Ping-Pong Policy in MuJoCo")
@@ -23,7 +27,7 @@ def main():
     parser.add_argument("--randomize", action=argparse.BooleanOptionalAction, default=False,
                         help="Enable domain randomization (--randomize / --no-randomize)")
     parser.add_argument("--residual-scale", type=float, default=None,
-                        help="Residual action scale (default: 0.005 nominal, use 0.01 for robust)")
+                        help="Residual action scale (default: environment config, currently 0.5)")
     parser.add_argument("--rl-control-dt", type=float, default=None,
                         help="RL action period in seconds (default: 0.01; use 0.005 for robust)")
     args = parser.parse_args()
@@ -40,10 +44,15 @@ def main():
 
     # 2. Load the Trained Model
     print(f"Loading {args.algo} model from {args.rl_weights}...")
+    install_numpy_pickle_compat_shims()
+    custom_objects = make_legacy_custom_objects(
+        observation_space=env.observation_space,
+        action_space=env.action_space,
+    )
     if args.algo == "PPO":
-        model = PPO.load(args.rl_weights)
+        model = PPO.load(args.rl_weights, env=env, custom_objects=custom_objects)
     else:
-        model = SAC.load(args.rl_weights)
+        model = SAC.load(args.rl_weights, env=env, custom_objects=custom_objects)
 
     # 3. Setup rendering if requested
     viewer = None

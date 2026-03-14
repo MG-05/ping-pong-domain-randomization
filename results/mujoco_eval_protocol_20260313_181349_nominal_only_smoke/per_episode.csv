@@ -1,0 +1,4 @@
+condition,model_label,physics,episode,seed,hits,reward,sim_time,survived
+FSM Baseline (Nominal),FSM Baseline,nominal,1,0,40,226.01037777640616,20.00000000000146,True
+Nominal (Nominal Physics),Nominal SAC,nominal,1,0,8,49.5790497292492,5.0510000000000215,False
+Robust (Nominal Physics),Robust SAC,nominal,1,0,39,221.00513516361772,20.00000000000146,True

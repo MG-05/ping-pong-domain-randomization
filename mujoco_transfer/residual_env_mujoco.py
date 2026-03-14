@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 import mujoco
 import numpy as np
@@ -21,10 +20,9 @@ class MujocoResidualConfig(MujocoFsmIkConfig):
     rl_control_dt: float = 0.01
     # Ball init noise matches Drake training (EnvConfig.ball_init_pos_noise=0.04)
     ball_init_pos_noise: float = 0.04
-    # Residual scale tuned via sweep: 0.005 optimal for nominal, 0.01 for robust.
-    # Tiny scale limits interference between Drake-trained residuals and new aimed FSM.
+    # Residual action envelope (Drake training default is 0.5 * 0.15 rad).
     max_residual_rad: float = 0.15
-    residual_scale: float = 0.005
+    residual_scale: float = 0.5
     # Rewards (identical to Drake's residual_env.py)
     reward_alive: float = 0.01
     reward_hit: float = 5.0
@@ -35,7 +33,15 @@ class MujocoResidualConfig(MujocoFsmIkConfig):
     randomize_dynamics: bool = False
     ball_mass_range: tuple[float, float] = (0.002, 0.0035)
     ball_friction_range: tuple[float, float] = (0.15, 0.30)
-    ball_damping_ratio_range: tuple[float, float] = (0.05, 0.15)
+    ball_restitution_range: tuple[float, float] = (0.85, 0.95)
+    # Backwards-compatibility override for legacy sweeps; if set, this takes
+    # precedence over restitution-to-damping mapping for the ball.
+    ball_damping_ratio_range: tuple[float, float] | None = None
+    paddle_mass_range: tuple[float, float] = (0.08, 0.15)
+    paddle_friction_range: tuple[float, float] = (0.20, 0.60)
+    paddle_restitution_range: tuple[float, float] = (0.80, 1.00)
+    floor_dissipation_range: tuple[float, float] = (0.01, 0.10)
+    floor_restitution_range: tuple[float, float] = (0.80, 1.00)
 
 
 class MujocoResidualEnv(gym.Env):
@@ -85,6 +91,18 @@ class MujocoResidualEnv(gym.Env):
         self._prev_hit_count = 0
         self._prev_ball_vz = 0.0
 
+        self._paddle_body_id = self._require_id(mujoco.mjtObj.mjOBJ_BODY, "paddle_link")
+        self._paddle_geom_id = self._require_id(mujoco.mjtObj.mjOBJ_GEOM, "paddle_geom")
+        self._floor_geom_id = self._require_id(mujoco.mjtObj.mjOBJ_GEOM, "floor")
+
+        self._nominal_ball_mass = float(self.model.body_mass[self._sim._ball_body_id])
+        self._nominal_ball_inertia = np.asarray(
+            self.model.body_inertia[self._sim._ball_body_id], dtype=np.float64
+        ).copy()
+        self._nominal_paddle_mass = float(self.model.body_mass[self._paddle_body_id])
+        self._nominal_paddle_inertia = np.asarray(
+            self.model.body_inertia[self._paddle_body_id], dtype=np.float64
+        ).copy()
     # ------------------------------------------------------------------
     # Gym API
     # ------------------------------------------------------------------
@@ -177,14 +195,77 @@ class MujocoResidualEnv(gym.Env):
         ball_body = self._sim._ball_body_id
         ball_geom = self._sim._ball_geom_id
 
-        new_mass = float(rng.uniform(*self._cfg.ball_mass_range))
-        self.model.body_mass[ball_body] = new_mass
-        r = 0.02
-        inertia = (2.0 / 5.0) * new_mass * r**2
-        self.model.body_inertia[ball_body] = np.full(3, inertia)
+        new_ball_mass = float(rng.uniform(*self._cfg.ball_mass_range))
+        self._set_body_mass_and_inertia(
+            body_id=ball_body,
+            nominal_mass=self._nominal_ball_mass,
+            nominal_inertia=self._nominal_ball_inertia,
+            new_mass=new_ball_mass,
+        )
 
-        new_friction = float(rng.uniform(*self._cfg.ball_friction_range))
-        self.model.geom_friction[ball_geom][0] = new_friction
+        new_ball_friction = float(rng.uniform(*self._cfg.ball_friction_range))
+        self.model.geom_friction[ball_geom][0] = new_ball_friction
 
-        new_damping = float(rng.uniform(*self._cfg.ball_damping_ratio_range))
-        self.model.geom_solref[ball_geom][1] = new_damping
+        if self._cfg.ball_damping_ratio_range is not None:
+            ball_damping = float(rng.uniform(*self._cfg.ball_damping_ratio_range))
+        else:
+            ball_restitution = float(rng.uniform(*self._cfg.ball_restitution_range))
+            ball_damping = self._restitution_to_contact_damping(ball_restitution)
+        self.model.geom_solref[ball_geom][1] = ball_damping
+
+        new_paddle_mass = float(rng.uniform(*self._cfg.paddle_mass_range))
+        self._set_body_mass_and_inertia(
+            body_id=self._paddle_body_id,
+            nominal_mass=self._nominal_paddle_mass,
+            nominal_inertia=self._nominal_paddle_inertia,
+            new_mass=new_paddle_mass,
+        )
+        new_paddle_friction = float(rng.uniform(*self._cfg.paddle_friction_range))
+        self.model.geom_friction[self._paddle_geom_id][0] = new_paddle_friction
+        paddle_restitution = float(rng.uniform(*self._cfg.paddle_restitution_range))
+        self.model.geom_solref[self._paddle_geom_id][1] = (
+            self._restitution_to_contact_damping(paddle_restitution)
+        )
+
+        floor_dissipation = float(rng.uniform(*self._cfg.floor_dissipation_range))
+        floor_restitution = float(rng.uniform(*self._cfg.floor_restitution_range))
+        self.model.geom_solref[self._floor_geom_id][0] = (
+            self._dissipation_to_time_constant(floor_dissipation)
+        )
+        self.model.geom_solref[self._floor_geom_id][1] = (
+            self._restitution_to_contact_damping(floor_restitution)
+        )
+
+    @staticmethod
+    def _restitution_to_contact_damping(restitution: float) -> float:
+        # MuJoCo has no direct restitution coefficient; we approximate higher
+        # restitution with lower contact damping in solref[1].
+        r = float(np.clip(restitution, 0.0, 1.0))
+        return float(np.clip(0.02 + (1.0 - r) * 0.6, 0.01, 0.2))
+
+    @staticmethod
+    def _dissipation_to_time_constant(dissipation: float) -> float:
+        # MuJoCo contact time-constant proxy (solref[0]): larger dissipation
+        # corresponds to slower/more damped contact response.
+        d = float(np.clip(dissipation, 0.0, 1.0))
+        return float(np.clip(0.002 + d * 0.08, 0.002, 0.03))
+
+    def _set_body_mass_and_inertia(
+        self,
+        body_id: int,
+        nominal_mass: float,
+        nominal_inertia: np.ndarray,
+        new_mass: float,
+    ) -> None:
+        self.model.body_mass[body_id] = new_mass
+        if nominal_mass > 1e-9:
+            scale = new_mass / nominal_mass
+            self.model.body_inertia[body_id] = nominal_inertia * scale
+        else:
+            self.model.body_inertia[body_id] = nominal_inertia
+
+    def _require_id(self, obj_type: mujoco.mjtObj, name: str) -> int:
+        obj_id = int(mujoco.mj_name2id(self.model, obj_type, name))
+        if obj_id < 0:
+            raise ValueError(f"Could not find MuJoCo object '{name}' ({obj_type}).")
+        return obj_id

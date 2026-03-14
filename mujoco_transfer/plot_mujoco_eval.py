@@ -91,7 +91,7 @@ SWEEP_ROBUST_HITS = np.array([
 NOMINAL_BEST = (0, 1)   # scale=0.005, dt=0.01 → 33.93
 ROBUST_BEST  = (1, 0)   # scale=0.01,  dt=0.005 → 14.87
 
-FSM_NOMINAL_HITS = 63.0    # reference ceiling: FSM nominal physics
+FSM_NOMINAL_HITS: float | None = None
 
 
 # ── Data loading ──────────────────────────────────────────────────────────────
@@ -160,8 +160,14 @@ def plot_hits_comparison(summary: dict, out_dir: Path) -> None:
         ax.annotate(f"{m:.1f}", xy=(x[i], m), xytext=(0, 5),
                     textcoords="offset points", ha="center", fontsize=9, fontweight="bold")
 
-    ax.axhline(FSM_NOMINAL_HITS, color=C_GRAY, linestyle="--", linewidth=1.2,
-               label=f"FSM nominal ceiling ({FSM_NOMINAL_HITS:.0f} hits)")
+    if FSM_NOMINAL_HITS is not None:
+        ax.axhline(
+            FSM_NOMINAL_HITS,
+            color=C_GRAY,
+            linestyle="--",
+            linewidth=1.2,
+            label=f"FSM nominal ceiling ({FSM_NOMINAL_HITS:.0f} hits)",
+        )
 
     solid_patch  = mpatches.Patch(color=C_GRAY,   label="FSM Baseline")
     blue_patch   = mpatches.Patch(color=C_BLUE,   label="Nominal SAC")
@@ -173,7 +179,7 @@ def plot_hits_comparison(summary: dict, out_dir: Path) -> None:
     ax.set_xticks(x)
     ax.set_xticklabels([SHORT_LABELS[c] for c in CONDITION_ORDER], fontsize=10)
     ax.set_ylabel("Mean Hits per Episode", fontsize=12)
-    ax.set_title("MuJoCo Transfer: Hits per Episode Across All Conditions", fontsize=13, fontweight="bold")
+    ax.set_title("MuJoCo Domain Validation: Hits per Episode Across All Conditions", fontsize=13, fontweight="bold")
     ax.grid(axis="y", alpha=0.3)
     fig.tight_layout()
     path = out_dir / "hits_comparison.png"
@@ -207,8 +213,14 @@ def plot_hit_distribution(per_ep: dict, out_dir: Path) -> None:
         ax.scatter(np.full(len(hits), i) + jitter, hits,
                    color=col, alpha=0.4, s=12, zorder=3)
 
-    ax.axhline(FSM_NOMINAL_HITS, color=C_GRAY, linestyle="--", linewidth=1.2,
-               label=f"FSM nominal ceiling ({FSM_NOMINAL_HITS:.0f} hits)")
+    if FSM_NOMINAL_HITS is not None:
+        ax.axhline(
+            FSM_NOMINAL_HITS,
+            color=C_GRAY,
+            linestyle="--",
+            linewidth=1.2,
+            label=f"FSM nominal ceiling ({FSM_NOMINAL_HITS:.0f} hits)",
+        )
 
     ax.set_xticks(range(len(CONDITION_ORDER)))
     ax.set_xticklabels([SHORT_LABELS[c] for c in CONDITION_ORDER], fontsize=10)
@@ -386,6 +398,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dir", type=str, default=None,
                         help="Path to mujoco_eval_protocol directory (default: latest)")
+    parser.add_argument(
+        "--include-legacy-sweep",
+        action="store_true",
+        help="Also render sweep_heatmap.png from hardcoded legacy sweep data.",
+    )
     args = parser.parse_args()
 
     eval_dir = Path(args.dir) if args.dir else _latest_eval_dir()
@@ -393,6 +410,9 @@ def main() -> None:
 
     per_ep  = load_per_episode(eval_dir)
     summary = load_summary(eval_dir)
+    global FSM_NOMINAL_HITS
+    if "FSM Baseline (Nominal)" in summary:
+        FSM_NOMINAL_HITS = float(summary["FSM Baseline (Nominal)"]["mean_hits"])
 
     # Verify expected conditions are present
     for cond in CONDITION_ORDER:
@@ -406,10 +426,14 @@ def main() -> None:
     plot_hit_distribution(per_ep, eval_dir)
     plot_degradation(summary, eval_dir)
     plot_survival_time(summary, eval_dir)
-    plot_sweep_heatmap(eval_dir)
+    if args.include_legacy_sweep:
+        plot_sweep_heatmap(eval_dir)
     plot_reward_comparison(summary, eval_dir)
 
-    print(f"\nAll 6 plots saved to: {eval_dir}")
+    if args.include_legacy_sweep:
+        print(f"\nAll plots (including legacy sweep) saved to: {eval_dir}")
+    else:
+        print(f"\nAll core plots saved to: {eval_dir}")
 
 
 if __name__ == "__main__":

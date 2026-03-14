@@ -1,0 +1,82 @@
+{
+  "summary": [
+    {
+      "n_episodes": 500,
+      "mean_hits": 25.548,
+      "std_hits": 14.39471069525192,
+      "max_hits": 52,
+      "mean_reward": 143.83840857143989,
+      "std_reward": 82.48901748754591,
+      "mean_sim_time": 12.043098000000379,
+      "survival_rate": 0.338,
+      "condition": "FSM Baseline (Nominal)",
+      "model_label": "FSM Baseline",
+      "physics": "nominal"
+    },
+    {
+      "n_episodes": 500,
+      "mean_hits": 1.444,
+      "std_hits": 0.7091290432636361,
+      "max_hits": 6,
+      "mean_reward": 7.843774765486711,
+      "std_reward": 6.356420819262652,
+      "mean_sim_time": 5.435069999999919,
+      "survival_rate": 0.02,
+      "condition": "FSM Baseline (Randomized)",
+      "model_label": "FSM Baseline",
+      "physics": "randomized"
+    },
+    {
+      "n_episodes": 500,
+      "mean_hits": 18.632,
+      "std_hits": 13.882815852700777,
+      "max_hits": 55,
+      "mean_reward": 103.92445876948769,
+      "std_reward": 80.19547017085867,
+      "mean_sim_time": 8.076989999999956,
+      "survival_rate": 0.078,
+      "condition": "Nominal (Nominal Physics)",
+      "model_label": "Nominal SAC",
+      "physics": "nominal"
+    },
+    {
+      "n_episodes": 500,
+      "mean_hits": 1.494,
+      "std_hits": 0.6526591759869772,
+      "max_hits": 5,
+      "mean_reward": 8.507823919133909,
+      "std_reward": 6.023879138181819,
+      "mean_sim_time": 5.821279999999994,
+      "survival_rate": 0.024,
+      "condition": "Nominal (Randomized Physics)",
+      "model_label": "Nominal SAC",
+      "physics": "randomized"
+    },
+    {
+      "n_episodes": 500,
+      "mean_hits": 24.326,
+      "std_hits": 12.66600663192626,
+      "max_hits": 48,
+      "mean_reward": 134.64061649562075,
+      "std_reward": 71.4740668105651,
+      "mean_sim_time": 12.076490000000057,
+      "survival_rate": 0.288,
+      "condition": "Robust (Nominal Physics)",
+      "model_label": "Robust SAC",
+      "physics": "nominal"
+    },
+    {
+      "n_episodes": 500,
+      "mean_hits": 1.374,
+      "std_hits": 0.649710704852552,
+      "max_hits": 6,
+      "mean_reward": 6.991566706854034,
+      "std_reward": 5.324580707258912,
+      "mean_sim_time": 4.983657999999938,
+      "survival_rate": 0.01,
+      "condition": "Robust (Randomized Physics)",
+      "model_label": "Robust SAC",
+      "physics": "randomized"
+    }
+  ]
+}

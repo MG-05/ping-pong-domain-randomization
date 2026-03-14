@@ -1,0 +1,39 @@
+{
+  "scope": "nominal_only_domain_validation",
+  "excluded": [
+    "all randomized MuJoCo conditions"
+  ],
+  "result_delta_vs_fsm_nominal": {
+    "nominal_sac": 0.04999999999999716,
+    "robust_sac": 8.25
+  },
+  "what_changed_to_get_this_regime": [
+    "Residual authority during transfer was reduced from 0.5 to 0.01.",
+    "MuJoCo validation now uses the same residual wrapper for FSM and RL.",
+    "Model loading uses compatibility shims for legacy SB3/numpy pickles.",
+    "Nominal-only interpretation: randomized MuJoCo figures are intentionally excluded."
+  ],
+  "global_eval_config": {
+    "rl_control_dt": 0.01,
+    "ball_init_pos_noise": 0.04,
+    "residual_scale_policy": 0.01,
+    "max_residual_rad": 0.15,
+    "kp": 3500.0,
+    "kd": 14.0,
+    "torque_limit": 400.0
+  },
+  "best_sweep_points": {
+    "Nominal SAC": {
+      "residual_scale": 0.005,
+      "mean_hits": 29.8,
+      "std_hits": 12.432216214336043,
+      "episodes": 5
+    },
+    "Robust SAC": {
+      "residual_scale": 0.01,
+      "mean_hits": 31.4,
+      "std_hits": 8.957678270623479,
+      "episodes": 5
+    }
+  }
+}

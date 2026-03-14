@@ -1,80 +1,81 @@
-# MuJoCo Transfer (FSM/IK Only)
+# MuJoCo Domain Validation
 
-This folder is a MuJoCo-only transfer scaffold for baseline evaluation before RL transfer.
+This folder provides a MuJoCo validation domain for Drake-trained residual policies.
 
-It includes:
-- A MuJoCo world with `iiwa` + fixed `wsg` + `paddle` + `ball` + `floor`.
-- Drake iiwa visual meshes (`models/assets/*.obj`) so the arm appearance matches iiwa (instead of a placeholder arm).
-- Drake Schunk WSG meshes (`wsg_body.obj`, `wsg_finger_with_tip.obj`) so the end-effector is an actual gripper model.
-- A runner that executes the existing Drake `FSMController` IK policy in MuJoCo.
-- Episode-level metrics for controller performance (`hits`, `fsm_hits`, `plans`, `IK successes`, `sim_time`).
+The evaluation protocol is designed for fairness:
+- FSM and RL are both evaluated through the same residual wrapper.
+- FSM baseline is implemented as zero residual action (`action = 0`), not a separate control stack.
+- Shared settings are enforced across all conditions (timing, spawn noise, gains, episode horizon).
+- Policy residual authority defaults to Drake training values (`residual_scale=0.5`, `max_residual_rad=0.15`).
 
-## Files
-- `models/iiwa_wsg_paddle_ball.xml`: MuJoCo MJCF scene/model.
-- `models/assets/`: iiwa mesh assets copied from Drake's iiwa description.
-- `fsm_ik_env.py`: MuJoCo simulation wrapper + Drake FSM/IK policy bridge.
-- `run_fsm_ik_mujoco.py`: CLI script for multi-episode evaluation.
+## Core Files
+- `models/iiwa_wsg_paddle_ball.xml`: MuJoCo scene/model.
+- `fsm_ik_env.py`: MuJoCo + Drake FSM/IK bridge.
+- `residual_env_mujoco.py`: Residual RL wrapper with matched observation/action contract.
+- `run_mujoco_eval_protocol.py`: Main domain-validation protocol runner.
+- `plot_mujoco_eval.py`: Legacy plotting utility (includes randomized figures).
+- `plot_domain_validation_figures.py`: Nominal-only figure pipeline + residual-scale sweep.
+- `tune_robust_residual_scale.py`: Robust-only residual-scale tuner (find best scale).
 
-## Run
+## Run Domain Validation
 From repo root:
 
 ```bash
-pip install mujoco
-python -m mujoco_transfer.run_fsm_ik_mujoco --episodes 5
+python -m mujoco_transfer.run_mujoco_eval_protocol \
+  --episodes 500 \
+  --nominal-model sac_baseline_final.zip \
+  --robust-model sac_robust_final.zip
 ```
 
-Render in viewer:
+For nominal-only comparison (FSM vs Nominal vs Robust):
 
 ```bash
-python -m mujoco_transfer.run_fsm_ik_mujoco --episodes 1 --render --realtime
+python -m mujoco_transfer.run_mujoco_eval_protocol \
+  --episodes 500 \
+  --nominal-model sac_baseline_final.zip \
+  --robust-model sac_robust_final.zip \
+  --residual-scale 0.01 \
+  --nominal-only
 ```
 
-Replay after termination (slow-motion loops):
+This writes `metadata.json`, `per_episode.csv`, and `summary.json` under:
+- `results/mujoco_eval_protocol_<timestamp>/`
+
+Generate plots:
 
 ```bash
-python -m mujoco_transfer.run_fsm_ik_mujoco \
-  --episodes 1 \
-  --render \
-  --replay-after \
-  --replay-speed 0.25 \
-  --replay-loops 3
+python -m mujoco_transfer.plot_mujoco_eval --dir results/mujoco_eval_protocol_<timestamp>
 ```
 
-Tune PID against Drake deterministic baseline targets:
+Generate domain-validation figures (nominal MuJoCo only, randomized results ignored):
 
 ```bash
-python -m mujoco_transfer.tune_pid_against_drake \
-  --iterations 80 \
-  --episodes 3 \
-  --out mujoco_transfer/pid_tuning_results.json
+python -m mujoco_transfer.plot_domain_validation_figures \
+  --dir results/mujoco_eval_protocol_<timestamp> \
+  --report-name drake_to_mujoco_nominal_validation \
+  --sweep-episodes 20
 ```
 
-## Current Tuned PID Defaults
-- `kp=3500.00`
-- `kd=14.00`
-- `torque_limit=400.00`
-- `use_bias_compensation=False`
-- `ball_init_pos=(0.77, -0.03, 0.70)`
-- `ball_init_pos_noise=0.0`
-- `hit_debounce_s=0.008`
+Outputs are written to:
+- `results/domain_validation_reports/<report-name>/figures/`
+- Includes `residual_scale_sweep.png` and `residual_scale_sweep.csv`.
 
-These are now the defaults in `MujocoFsmIkConfig` and `run_fsm_ik_mujoco.py`.
-They are the best-known deterministic Drake-target PID settings found by
-`tune_pid_against_drake.py` in this transfer setup.
+Tune robust residual scale only (find best scale by mean hits):
 
-## Important Notes
-- This is intentionally **FSM/IK-only** (no RL policy loading yet).
-- The IK planner still comes from Drake (`src/controllers/fsm_controller.py`).
-- MuJoCo contact force is reduced to a scalar magnitude proxy for hit detection.
-- `hits` reports debounced contact-event hits (`--hit-threshold`, `--hit-min-z`, `--hit-debounce`);
-  `fsm_hits` reports the strict FSM impact counter.
-- The current MuJoCo robot is a practical transfer model, not a strict mesh/inertia clone of Drake's station model.
-- Default CLI parameters are tuned for bring-up (to ensure FSM planning is exercised in MuJoCo).
+```bash
+python -m mujoco_transfer.tune_robust_residual_scale \
+  --episodes 200 \
+  --scales "0.006,0.008,0.01,0.012,0.015,0.02" \
+  --robust-model sac_robust_final.zip \
+  --tag robust_nominal_tune
+```
 
-## What You Still Need To Do
-1. Calibrate MuJoCo kinematics/dynamics against Drake (joint axis conventions, inertias, contact settings).
-2. Verify control gains (`--kp`, `--kd`, `--torque-limit`) so the arm tracks IK trajectories without oscillation.
-3. Tune ball spawn/task setup (`--ball-x --ball-y --ball-z --ball-noise`) to match your intended test distribution.
-4. Validate hit detection thresholds under MuJoCo contacts (currently scalar-force proxy).
-5. Run baseline sweeps and save results to a JSON/CSV report.
-6. After the RL model is finalized, plug policy inference into this env (same observation/action contract as Drake residual env).
+Outputs are written to:
+- `results/residual_scale_tuning/robust_residual_tuning_<timestamp>_<tag>/`
+- Includes `robust_residual_scale_sweep.csv`, `best_robust_residual_scale.json`, and `robust_residual_scale_sweep.png`.
+- Default selection objective is transfer margin: `robust - max(FSM, nominal)`.
+
+## Notes
+- MuJoCo is still not a perfect Drake clone; this is a validation domain, not identity simulation.
+- Randomized evaluation in `residual_env_mujoco.py` now perturbs ball, paddle, and floor parameters (MuJoCo proxy mapping for restitution/dissipation).
+- `run_fsm_ik_mujoco.py` remains useful for low-level bring-up/debug, but not as the primary fairness baseline for policy-vs-FSM comparisons.
