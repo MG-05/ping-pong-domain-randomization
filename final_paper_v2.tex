@@ -449,7 +449,7 @@ Robust SAC / Rand & 1.4 & 0.7 & 1\% \\
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=\columnwidth]{results/mujoco_eval_protocol_20260312_155025/hits_comparison.png}
+    \includegraphics[width=\columnwidth]{results/mujoco_eval_protocol_20260313_170716_nominal500_rs001/hits_comparison.png}
     \caption{MuJoCo sim-to-sim transfer: hit count comparison across models and physics conditions (500 episodes each). All policies degrade substantially compared to Drake (Table~\ref{tab:main_results}), but robust SAC retains the best relative stability under nominal MuJoCo physics.}
     \label{fig:mujoco_results}
 \end{figure}
@@ -460,11 +460,11 @@ Robust SAC / Rand & 1.4 & 0.7 & 1\% \\
 The residual scale parameter $\alpha$ controls how much of the learned SAC correction is injected on top of the FSM+IK baseline. At $\alpha = 0$, the system reduces to the pure FSM baseline with no RL contribution. As $\alpha$ increases, the RL agent exerts progressively larger joint-position corrections. This section analyzes how $\alpha$ affects performance in MuJoCo sim-to-sim transfer, revealing a narrow optimal range.
 
 \subsection{Sweep Protocol}
-We swept $\alpha$ over 15 values from $0.0$ to $0.014$ using the robust SAC policy in MuJoCo with 20 episodes per scale value (Table~\ref{tab:residual_sweep}). The sweep was conducted under randomized physics to stress-test the robustness of each injection level.
+We swept $\alpha$ over 15 values from $0.0$ to $0.014$ using the robust SAC policy in MuJoCo with 20 episodes per scale value (Table~\ref{tab:residual_sweep}). The sweep was conducted under nominal MuJoCo physics to isolate the effect of residual injection magnitude from physics perturbation.
 
 \begin{table}[t]
 \centering
-\caption{Residual scale sweep: robust SAC in MuJoCo under randomized physics (20 episodes per scale). The optimal residual scale is $\alpha = 0.01$, substantially smaller than the training-time value of $\alpha = 0.5$.}
+\caption{Residual scale sweep: robust SAC in MuJoCo under nominal physics (20 episodes per scale). The optimal residual scale is $\alpha = 0.01$, substantially smaller than the training-time value of $\alpha = 0.5$.}
 \label{tab:residual_sweep}
 \small
 \begin{tabular}{cccc}
