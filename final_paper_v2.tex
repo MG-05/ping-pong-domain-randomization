@@ -446,16 +446,8 @@ Robust SAC & 24.3 & 12.7 & 29\% \\
 
 \begin{figure}[t]
     \centering
-    \IfFileExists{results/mujoco_nominal_figure2_comparison.png}{%
-        \includegraphics[width=\columnwidth]{results/mujoco_nominal_figure2_comparison.png}%
-    }{%
-        \IfFileExists{results/domain_validation_reports/drake_to_mujoco_nominal_validation/figures/nominal_hits_summary.png}{%
-            \includegraphics[width=\columnwidth]{results/domain_validation_reports/drake_to_mujoco_nominal_validation/figures/nominal_hits_summary.png}%
-        }{%
-            \includegraphics[width=\columnwidth]{results/mujoco_eval_protocol_20260313_123354_rs001_diag/figures_domain_validation_nominal/nominal_hits_summary.png}%
-        }
-    }
-    \caption{MuJoCo sim-to-sim transfer under nominal MuJoCo physics: mean hits with $\pm$std error bars and survival percentages (500 episodes each), derived from the nominal MuJoCo evaluation dataset used for Table~\ref{tab:mujoco_transfer}.}
+    \includegraphics[width=\columnwidth]{results/mujoco_hits_nominal_only.png}
+    \caption{MuJoCo sim-to-sim transfer: hit count comparison across models under nominal physics.}
     \label{fig:mujoco_results}
 \end{figure}
 
