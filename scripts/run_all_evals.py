@@ -12,6 +12,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.envs.residual_env import EnvConfig, PingPongResidualEnv
 from src.evaluate import run_evaluation
+from src.utils.sb3_compat import (
+    install_numpy_pickle_compat_shims,
+    make_legacy_custom_objects,
+)
 from stable_baselines3 import SAC
 
 REPO = Path(__file__).resolve().parent.parent
@@ -29,7 +33,14 @@ def eval_model(model_path: str | None, label: str, randomize: bool) -> dict:
 
     model = None
     if model_path is not None:
-        model = SAC.load(model_path)
+        install_numpy_pickle_compat_shims()
+        model = SAC.load(
+            model_path,
+            custom_objects=make_legacy_custom_objects(
+                observation_space=env.observation_space,
+                action_space=env.action_space,
+            ),
+        )
 
     physics = "randomized" if randomize else "nominal"
     print(f"\n{'='*60}")

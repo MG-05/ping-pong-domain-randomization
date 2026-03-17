@@ -44,7 +44,7 @@ Julia Novick\thanks{All authors contributed equally to this work.} \quad Jonatha
 \maketitle
 
 \begin{abstract}
-We present a theory-oriented study of residual reinforcement learning for robotic ball bouncing under uncertain simulation physics. The controller combines a finite-state-machine and inverse-kinematics baseline (FSM+IK) with a learned Soft Actor-Critic (SAC) residual that provides bounded joint-space corrections. We compare nominal SAC training on fixed physics against robust SAC training with per-episode domain randomization over mass, friction, restitution, and dissipation parameters. Experiments use 20-episode deterministic evaluations at checkpoints (500k, 750k, 1M training steps) under nominal and randomized test physics in the Drake simulator, plus 500-episode cross-simulator evaluations in MuJoCo. Nominal SAC achieves the strongest absolute performance in Drake (482 mean hits under nominal physics; 328 under randomized), while robust SAC exhibits better relative robustness trends at later checkpoints (+25.9\% at 750k and +48.5\% at 1M from nominal to randomized evaluation). In MuJoCo sim-to-sim transfer, all policies experience substantial degradation, but the robust SAC policy retains the best relative stability. We further analyze how the residual scale parameter governs the degree of RL correction injected on top of the baseline, finding that a narrow optimal range ($\alpha \approx 0.01$) yields peak hit counts while larger or smaller values degrade performance. Code and artifacts are public at \url{https://github.com/MG-05/ping-pong-domain-randomization}.
+We present a theory-oriented study of residual reinforcement learning for robotic ball bouncing under uncertain simulation physics. The controller combines a finite-state-machine and inverse-kinematics baseline (FSM+IK) with a learned Soft Actor-Critic (SAC) residual that provides bounded joint-space corrections. We compare nominal SAC training on fixed physics against robust SAC training with per-episode domain randomization over mass, friction, restitution, and dissipation parameters. Experiments use 20-episode deterministic evaluations at checkpoints (500k, 750k, 1M training steps) under nominal and randomized test physics in the Drake simulator. Cross-simulator MuJoCo evaluations are nominal-only (500 episodes). Nominal SAC achieves the strongest absolute performance in Drake (482 mean hits under nominal physics; 328 under randomized), while robust SAC exhibits better relative robustness trends at later checkpoints (+25.9\% at 750k and +48.5\% at 1M from nominal to randomized evaluation). In nominal MuJoCo sim-to-sim transfer, all policies degrade relative to Drake; the FSM baseline slightly outperforms robust SAC, while robust SAC remains close and clearly outperforms nominal SAC. We further analyze how the residual scale parameter governs the degree of RL correction injected on top of the baseline, finding that a narrow optimal range ($\alpha \approx 0.01$) yields peak hit counts while larger or smaller values degrade performance. Code and artifacts are public at \url{https://github.com/MG-05/ping-pong-domain-randomization}.
 \end{abstract}
 
 \section{Introduction}
@@ -76,7 +76,7 @@ Deterministic actor-critic methods such as DDPG~\cite{lillicrap2015ddpg} show th
 Randomizing simulator dynamics can reduce overfitting to a single simulator instance and improve out-of-distribution robustness~\cite{tobin2017domainrand,peng2018sim2real}.
 
 \textbf{Robust and residual RL.}
-Robust RL emphasizes performance under perturbations~\cite{pinto2017robust}; residual RL combines structured control priors with learned corrections for safety and sample efficiency~\cite{johannink2019residualrl}.
+Robust RL emphasizes performance under perturbations~\cite{pinto2017robust}; residual RL combines structured control priors with learned corrections for safety and sample efficiency~\cite{johannink2019residualrl}. Recent examples include SAC-GMM for trajectory-space skill refinement~\cite{nematollahi2022sacgmm}, residual adaptation of DMPs for contact-rich manipulation~\cite{davchev2022rlfd}, and context-encoded residual adaptation for offline-to-online RL under changing dynamics~\cite{nakhaei2024relce}.
 
 \textbf{Practical implementation framework.}
 Stable-Baselines3 provides reproducible, standard RL training infrastructure that we leverage for SAC training and evaluation orchestration~\cite{raffin2021sb3}.
@@ -424,33 +424,38 @@ Evaluation uses deterministic action selection (taking the mean of the policy's 
 However, deterministic evaluation also creates a limitation: under nominal fixed physics, some metrics become near-deterministic (e.g., near-zero standard deviation), reducing visibility into variability. We therefore include randomized evaluation and variance metrics to recover uncertainty information.
 
 \subsection{MuJoCo Sim-to-Sim Transfer}
-To test cross-simulator generalization, we evaluate all policies in a MuJoCo reimplementation of the ball-bouncing environment (\texttt{mujoco\_transfer/}). Table~\ref{tab:mujoco_transfer} reports 500-episode evaluations under the improved SAC injection protocol (residual scale $\alpha = 0.01$; see Section~\ref{sec:residual_scale}). Performance drops substantially across the board compared to Drake (Table~\ref{tab:main_results}), confirming that sim-to-sim transfer is nontrivial even when the nominal task geometry is preserved. In MuJoCo nominal physics, the FSM baseline achieves 25.5 mean hits with 34\% survival, while robust SAC achieves 24.3 mean hits with 29\% survival---closely matching the baseline and substantially outperforming nominal SAC (18.6 mean hits, 8\% survival). Under randomized physics, all policies collapse to very low hit counts ($\sim$1.4 hits), confirming the severity of MuJoCo's different contact model.
+To test cross-simulator generalization, we evaluate all policies in a MuJoCo reimplementation of the ball-bouncing environment (\texttt{mujoco\_transfer/}). Table~\ref{tab:mujoco_transfer} reports 500-episode evaluations under nominal MuJoCo physics with the improved SAC injection protocol (residual scale $\alpha = 0.01$; see Section~\ref{sec:residual_scale}). Performance drops substantially across the board compared to Drake (Table~\ref{tab:main_results}), confirming that sim-to-sim transfer is nontrivial even when the nominal task geometry is preserved. In nominal MuJoCo physics, the FSM baseline achieves 25.5 mean hits with 34\% survival, while robust SAC achieves 24.3 mean hits with 29\% survival---closely matching the baseline and substantially outperforming nominal SAC (18.6 mean hits, 8\% survival).
 
-Figure~\ref{fig:mujoco_results} shows the corresponding hit distributions across conditions.
+Figure~\ref{fig:mujoco_results} shows the corresponding nominal MuJoCo hit comparison across models.
 
 \begin{table}[t]
 \centering
-\caption{MuJoCo sim-to-sim transfer results (500 episodes per condition, residual scale $\alpha = 0.01$).}
+\caption{MuJoCo sim-to-sim transfer results under nominal MuJoCo physics (500 episodes per model, residual scale $\alpha = 0.01$).}
 \label{tab:mujoco_transfer}
 \small
 \begin{tabular}{lccc}
 \toprule
-Model / Physics & Mean Hits & Std & Survival \\
+Model & Mean Hits & Std & Survival \\
 \midrule
-FSM Baseline / Nom & 25.5 & 14.4 & 34\% \\
-FSM Baseline / Rand & 1.4 & 0.7 & 2\% \\
-Nominal SAC / Nom & 18.6 & 13.9 & 8\% \\
-Nominal SAC / Rand & 1.5 & 0.7 & 2\% \\
-Robust SAC / Nom & 24.3 & 12.7 & 29\% \\
-Robust SAC / Rand & 1.4 & 0.7 & 1\% \\
+FSM Baseline & 25.5 & 14.4 & 34\% \\
+Nominal SAC & 18.6 & 13.9 & 8\% \\
+Robust SAC & 24.3 & 12.7 & 29\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=\columnwidth]{results/mujoco_eval_protocol_20260313_170716_nominal500_rs001/hits_comparison.png}
-    \caption{MuJoCo sim-to-sim transfer: hit count comparison across models and physics conditions (500 episodes each). All policies degrade substantially compared to Drake (Table~\ref{tab:main_results}), but robust SAC retains the best relative stability under nominal MuJoCo physics.}
+    \IfFileExists{results/mujoco_nominal_figure2_comparison.png}{%
+        \includegraphics[width=\columnwidth]{results/mujoco_nominal_figure2_comparison.png}%
+    }{%
+        \IfFileExists{results/domain_validation_reports/drake_to_mujoco_nominal_validation/figures/nominal_hits_summary.png}{%
+            \includegraphics[width=\columnwidth]{results/domain_validation_reports/drake_to_mujoco_nominal_validation/figures/nominal_hits_summary.png}%
+        }{%
+            \includegraphics[width=\columnwidth]{results/mujoco_eval_protocol_20260313_123354_rs001_diag/figures_domain_validation_nominal/nominal_hits_summary.png}%
+        }
+    }
+    \caption{MuJoCo sim-to-sim transfer under nominal MuJoCo physics: mean hits with $\pm$std error bars and survival percentages (500 episodes each), derived from the nominal MuJoCo evaluation dataset used for Table~\ref{tab:mujoco_transfer}.}
     \label{fig:mujoco_results}
 \end{figure}
 
@@ -908,6 +913,25 @@ Lerrel Pinto, James Davidson, Rahul Sukthankar, and Abhinav Gupta.
 Tobias Johannink, Shikhar Bahl, Ashvin Nair, et al.
 \newblock Residual Reinforcement Learning for Robot Control.
 \newblock In \emph{Proceedings of ICRA}, 2019.
+
+\bibitem{nematollahi2022sacgmm}
+Iman Nematollahi, Erick Rosete-Beas, Adrian Roefer, Tim Welschehold, Abhinav Valada, and Wolfram Burgard.
+\newblock Robot Skill Adaptation via Soft Actor-Critic Gaussian Mixture Models.
+\newblock In \emph{Proceedings of ICRA}, pages 8651--8657, 2022.
+\newblock \url{https://doi.org/10.1109/ICRA46639.2022.9811770}.
+
+\bibitem{davchev2022rlfd}
+Todor Davchev, Kevin Sebastian Luck, Michael Burke, Franziska Meier, Stefan Schaal, and Subramanian Ramamoorthy.
+\newblock Residual Learning from Demonstration: Adapting DMPs for Contact-rich Manipulation.
+\newblock \emph{IEEE Robotics and Automation Letters}, 7(2):4488--4495, 2022.
+\newblock \url{https://doi.org/10.1109/LRA.2022.3150024}.
+
+\bibitem{nakhaei2024relce}
+Mohammadreza Nakhaei, Aidan Scannell, and Joni Pajarinen.
+\newblock Residual Learning and Context Encoding for Adaptive Offline-to-Online Reinforcement Learning.
+\newblock In \emph{Proceedings of the 6th Annual Learning for Dynamics and Control Conference (L4DC)},
+volume 242 of \emph{Proceedings of Machine Learning Research}, pages 1107--1121, 2024.
+\newblock \url{https://proceedings.mlr.press/v242/nakhaeinezhadfard24a.html}.
 
 \bibitem{raffin2021sb3}
 Antonin Raffin, Ashley Hill, Adam Gleave, et al.

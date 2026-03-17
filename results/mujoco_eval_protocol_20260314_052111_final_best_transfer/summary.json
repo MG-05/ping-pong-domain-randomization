@@ -1,0 +1,43 @@
+{
+  "summary": [
+    {
+      "n_episodes": 500,
+      "mean_hits": 20.014,
+      "std_hits": 11.136687299192701,
+      "max_hits": 48,
+      "mean_reward": 133.66343238033778,
+      "std_reward": 77.36448405928739,
+      "mean_sim_time": 10.840442000000184,
+      "survival_rate": 0.214,
+      "condition": "FSM Baseline (Nominal)",
+      "model_label": "FSM Baseline",
+      "physics": "nominal"
+    },
+    {
+      "n_episodes": 500,
+      "mean_hits": 14.738,
+      "std_hits": 10.010062737066137,
+      "max_hits": 44,
+      "mean_reward": 97.46720522752044,
+      "std_reward": 69.78467641952412,
+      "mean_sim_time": 7.5049120000000356,
+      "survival_rate": 0.064,
+      "condition": "Nominal (Nominal Physics)",
+      "model_label": "Nominal SAC",
+      "physics": "nominal"
+    },
+    {
+      "n_episodes": 500,
+      "mean_hits": 23.346,
+      "std_hits": 10.557380546328716,
+      "max_hits": 39,
+      "mean_reward": 157.35395804027846,
+      "std_reward": 72.76110386826376,
+      "mean_sim_time": 13.968038000000378,
+      "survival_rate": 0.436,
+      "condition": "Robust (Nominal Physics)",
+      "model_label": "Robust SAC",
+      "physics": "nominal"
+    }
+  ]
+}

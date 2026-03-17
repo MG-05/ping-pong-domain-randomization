@@ -21,6 +21,10 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 from src.envs.residual_env import EnvConfig, PingPongResidualEnv
+from src.utils.sb3_compat import (
+    install_numpy_pickle_compat_shims,
+    make_legacy_custom_objects,
+)
 
 
 class MetricsCallback(BaseCallback):
@@ -172,11 +176,13 @@ def main() -> int:
 
     if args.resume:
         print(f"Resuming from {args.resume}")
+        install_numpy_pickle_compat_shims()
         model = SAC.load(
             args.resume,
             env=train_env,
             tensorboard_log=str(log_dir),
             device="cuda",
+            custom_objects=make_legacy_custom_objects(),
         )
         model.learning_rate = args.lr
     else:

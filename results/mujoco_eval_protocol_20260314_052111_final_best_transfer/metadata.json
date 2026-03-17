@@ -1,0 +1,42 @@
+{
+  "timestamp": "mujoco_eval_protocol_20260314_052111_final_best_transfer",
+  "profile": "domain_validation_v1",
+  "n_episodes_per_condition": 500,
+  "seeds": "0\u2013499",
+  "model_xml": "/Users/mayandgulati/src/UCSB/cs291K/ping-pong-domain-randomization/mujoco_transfer/models/iiwa_wsg_paddle_ball.xml",
+  "global_eval_config": {
+    "rl_control_dt": 0.005,
+    "ball_init_pos_noise": 0.04,
+    "residual_scale_policy": 0.009,
+    "max_residual_rad": 0.15,
+    "kp": 3500.0,
+    "kd": 14.0,
+    "torque_limit": 400.0
+  },
+  "conditions": [
+    {
+      "condition": "FSM Baseline (Nominal)",
+      "model_label": "FSM Baseline",
+      "physics": "nominal",
+      "model_path": "fsm_zero",
+      "randomize": false,
+      "residual_scale": 0.0
+    },
+    {
+      "condition": "Nominal (Nominal Physics)",
+      "model_label": "Nominal SAC",
+      "physics": "nominal",
+      "model_path": "/Users/mayandgulati/src/UCSB/cs291K/ping-pong-domain-randomization/sac_baseline_final.zip",
+      "randomize": false,
+      "residual_scale": 0.009
+    },
+    {
+      "condition": "Robust (Nominal Physics)",
+      "model_label": "Robust SAC",
+      "physics": "nominal",
+      "model_path": "/Users/mayandgulati/src/UCSB/cs291K/ping-pong-domain-randomization/sac_robust_final.zip",
+      "randomize": false,
+      "residual_scale": 0.009
+    }
+  ]
+}

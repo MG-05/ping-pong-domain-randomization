@@ -1,0 +1,32 @@
+{
+  "objective": "robust_margin",
+  "compare_nominal": true,
+  "best_residual_scale": 0.009,
+  "best_robust_mean_hits": 24.791666666666668,
+  "best_robust_std_hits": 9.145942482264411,
+  "best_margin_vs_fsm": 5.191666666666666,
+  "best_margin_vs_nominal": 8.341666666666669,
+  "best_margin_vs_best_baseline": 5.191666666666666,
+  "episodes_per_scale": 120,
+  "scales": [
+    0.008,
+    0.009,
+    0.01,
+    0.011,
+    0.012,
+    0.015,
+    0.02
+  ],
+  "robust_model_path": "/Users/mayandgulati/src/UCSB/cs291K/ping-pong-domain-randomization/sac_robust_final.zip",
+  "nominal_model_path": "/Users/mayandgulati/src/UCSB/cs291K/ping-pong-domain-randomization/sac_baseline_final.zip",
+  "model_xml": "/Users/mayandgulati/src/UCSB/cs291K/ping-pong-domain-randomization/mujoco_transfer/models/iiwa_wsg_paddle_ball.xml",
+  "config": {
+    "rl_control_dt": 0.005,
+    "ball_noise": 0.04,
+    "max_residual_rad": 0.15,
+    "kp": 3500.0,
+    "kd": 14.0,
+    "torque_limit": 400.0,
+    "seed_offset": 10000
+  }
+}

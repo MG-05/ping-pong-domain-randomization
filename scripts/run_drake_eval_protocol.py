@@ -30,6 +30,11 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from src.utils.sb3_compat import (
+    install_numpy_pickle_compat_shims,
+    make_legacy_custom_objects,
+)
+
 if TYPE_CHECKING:
     from src.envs.residual_env import EnvConfig, PingPongResidualEnv
 
@@ -372,7 +377,12 @@ def main() -> int:
     for spec in model_specs:
         print(f"\n=== Loading model: {spec.label} ===")
         print(f"Path: {spec.path}")
-        model = SAC.load(str(spec.path), device=args.device)
+        install_numpy_pickle_compat_shims()
+        model = SAC.load(
+            str(spec.path),
+            device=args.device,
+            custom_objects=make_legacy_custom_objects(),
+        )
 
         for physics in physics_modes:
             use_randomization = physics == "randomized"

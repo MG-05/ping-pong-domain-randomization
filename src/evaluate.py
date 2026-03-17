@@ -32,6 +32,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from src.envs.residual_env import EnvConfig, PingPongResidualEnv
+from src.utils.sb3_compat import (
+    install_numpy_pickle_compat_shims,
+    make_legacy_custom_objects,
+)
 
 if TYPE_CHECKING:
     from stable_baselines3 import SAC
@@ -266,7 +270,14 @@ def main() -> int:
                 print(f"[SKIP] {label}: file not found ({model_path})")
                 continue
             from stable_baselines3 import SAC
-            sac_model = SAC.load(str(model_path))
+            install_numpy_pickle_compat_shims()
+            sac_model = SAC.load(
+                str(model_path),
+                custom_objects=make_legacy_custom_objects(
+                    observation_space=env.observation_space,
+                    action_space=env.action_space,
+                ),
+            )
 
         print(f"--- {label} ---")
         if model_path:

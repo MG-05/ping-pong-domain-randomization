@@ -1,0 +1,24 @@
+{
+  "source_summary": "results/mujoco_eval_protocol_20260313_170716_nominal500_rs001/summary.json",
+  "n_episodes": 500,
+  "rows": [
+    {
+      "model": "FSM Baseline",
+      "mean_hits": 25.548,
+      "std_hits": 14.39471069525192,
+      "survival_rate": 0.338
+    },
+    {
+      "model": "Nominal SAC",
+      "mean_hits": 18.632,
+      "std_hits": 13.882815852700777,
+      "survival_rate": 0.078
+    },
+    {
+      "model": "Robust SAC",
+      "mean_hits": 24.326,
+      "std_hits": 12.66600663192626,
+      "survival_rate": 0.288
+    }
+  ]
+}

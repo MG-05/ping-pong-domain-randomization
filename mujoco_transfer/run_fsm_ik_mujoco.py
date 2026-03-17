@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
+import platform
+import sys
 import time
 from typing import Any
 
@@ -259,6 +262,15 @@ def main() -> int:
 
     if args.replay_after and not args.render:
         parser.error("--replay-after requires --render.")
+    if args.render and platform.system() == "Darwin":
+        launched_via_mjpython = bool(os.environ.get("MJPYTHON_BIN"))
+        if not launched_via_mjpython:
+            raise RuntimeError(
+                "On macOS, MuJoCo rendering must be launched with mjpython.\n"
+                "Run:\n"
+                "  .venv/bin/mjpython -m mujoco_transfer.run_fsm_ik_mujoco "
+                "--episodes 1 --render --realtime"
+            )
 
     cfg = MujocoFsmIkConfig(
         physics_dt=args.physics_dt,
