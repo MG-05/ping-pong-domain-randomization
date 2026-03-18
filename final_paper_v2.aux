@@ -1,0 +1,123 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{haarnoja2018sac}
+\citation{lillicrap2015ddpg}
+\citation{tobin2017domainrand}
+\citation{peng2018sim2real}
+\citation{pinto2017robust}
+\citation{johannink2019residualrl}
+\citation{nematollahi2022sacgmm}
+\citation{davchev2022rlfd}
+\citation{nakhaei2024relce}
+\citation{raffin2021sb3}
+\citation{sutton2018rl}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{1}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Theoretical Background}{2}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}MDP and Residual Action Parameterization}{2}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}SAC Objective}{2}{subsection.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Why Residual SAC Is Appropriate for This Task}{2}{subsection.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Robustness Under Transition Shift}{2}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}SAC Training Dynamics in Residual Control}{2}{subsection.3.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Entropy Temperature and Exploration Interpretation}{3}{subsection.3.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Critic and Actor Losses}{3}{subsection.3.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Distributional Robustness Perspective}{3}{subsection.3.8}\protected@file@percent }
+\newlabel{prop:expected_risk}{{1}{3}{Expected-risk interpretation}{proposition.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Methods and Implementation}{3}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Environment and Timing}{3}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Observation, Action, and Interfaces}{3}{subsection.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Reward Construction}{4}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:reward}{{4.3}{4}{Reward Construction}{subsection.4.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Training Configuration}{4}{subsection.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Domain Randomization Mechanism}{4}{subsection.4.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Domain randomization ranges used in robust training.}}{4}{table.caption.2}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{tab:dr_ranges}{{1}{4}{Domain randomization ranges used in robust training}{table.caption.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Experimental Protocol}{4}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Hypotheses}{4}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Evaluation Procedure}{4}{subsection.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Metrics}{4}{subsection.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Implementation Walkthrough}{5}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}End-to-End Dataflow}{5}{subsection.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Why the Observation Space Is Structured This Way}{5}{subsection.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Reward Design Trade-offs}{5}{subsection.6.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Contact Event Debouncing and Measurement Semantics}{5}{subsection.6.4}\protected@file@percent }
+\newlabel{sec:contact_debounce}{{6.4}{5}{Contact Event Debouncing and Measurement Semantics}{subsection.6.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}Training Infrastructure and Reproducibility}{5}{subsection.6.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.6}Domain Randomization as Scenario Generation}{5}{subsection.6.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.7}FSM Controller Architecture}{5}{subsection.6.7}\protected@file@percent }
+\newlabel{sec:fsm_architecture}{{6.7}{5}{FSM Controller Architecture}{subsection.6.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces FSM state diagram for the baseline controller. Transitions are driven by ball tracking (descent detection, height thresholds), IK feasibility, timing schedules (strike start time derived from ballistic prediction), and contact detection (force threshold or velocity reversal).}}{6}{figure.caption.3}\protected@file@percent }
+\newlabel{fig:fsm_diagram}{{1}{6}{FSM state diagram for the baseline controller. Transitions are driven by ball tracking (descent detection, height thresholds), IK feasibility, timing schedules (strike start time derived from ballistic prediction), and contact detection (force threshold or velocity reversal)}{figure.caption.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.8}Inverse Kinematics Solver}{6}{subsection.6.8}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces MuJoCo sim-to-sim transfer results under nominal MuJoCo physics (500 episodes per model, residual scale $\alpha = 0.01$).}}{7}{table.caption.4}\protected@file@percent }
+\newlabel{tab:mujoco_transfer}{{2}{7}{MuJoCo sim-to-sim transfer results under nominal MuJoCo physics (500 episodes per model, residual scale $\alpha = 0.01$)}{table.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.9}Why Deterministic Evaluation Is Used}{7}{subsection.6.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.10}MuJoCo Sim-to-Sim Transfer}{7}{subsection.6.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}Residual Scale Analysis}{7}{section.7}\protected@file@percent }
+\newlabel{sec:residual_scale}{{7}{7}{Residual Scale Analysis}{section.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces MuJoCo sim-to-sim transfer: hit count comparison across models under nominal physics.}}{7}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:mujoco_results}{{2}{7}{MuJoCo sim-to-sim transfer: hit count comparison across models under nominal physics}{figure.caption.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Residual scale sweep: robust SAC in MuJoCo under nominal physics (20 episodes per scale). The optimal residual scale is $\alpha = 0.01$, much smaller than the training-time value of $\alpha = 0.5$.}}{7}{table.caption.6}\protected@file@percent }
+\newlabel{tab:residual_sweep}{{3}{7}{Residual scale sweep: robust SAC in MuJoCo under nominal physics (20 episodes per scale). The optimal residual scale is $\alpha = 0.01$, much smaller than the training-time value of $\alpha = 0.5$}{table.caption.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Sweep Protocol}{7}{subsection.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Key Findings}{7}{subsection.7.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Residual scale sweep in MuJoCo: mean hit count (with standard deviation bands) as a function of residual scale $\alpha $. Peak performance at $\alpha = 0.01$ demonstrates the sensitivity of sim-to-sim transfer to the injection magnitude.}}{8}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:residual_sweep}{{3}{8}{Residual scale sweep in MuJoCo: mean hit count (with standard deviation bands) as a function of residual scale $\alpha $. Peak performance at $\alpha = 0.01$ demonstrates the sensitivity of sim-to-sim transfer to the injection magnitude}{figure.caption.7}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces FSM baseline robustness (dedicated baseline report).}}{8}{table.caption.8}\protected@file@percent }
+\newlabel{tab:fsm_baseline}{{4}{8}{FSM baseline robustness (dedicated baseline report)}{table.caption.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Results}{8}{section.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}FSM Baseline Robustness}{8}{subsection.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Main Quantitative Comparison}{8}{subsection.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Extended Metric Analysis}{8}{subsection.8.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.4}Checkpoint-by-Checkpoint Interpretation}{8}{subsection.8.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.5}Cross-Metric Tensions}{8}{subsection.8.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces 20-episode evaluation summary across models and physics conditions in the Drake simulator.}}{9}{table.caption.9}\protected@file@percent }
+\newlabel{tab:main_results}{{5}{9}{20-episode evaluation summary across models and physics conditions in the Drake simulator}{table.caption.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Derived hit throughput (hits/s) from evaluation means.}}{9}{table.caption.10}\protected@file@percent }
+\newlabel{tab:throughput}{{6}{9}{Derived hit throughput (hits/s) from evaluation means}{table.caption.10}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {9}Failure Analysis and Lessons}{9}{section.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {10}Threats to Validity}{9}{section.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {11}Model-Family Case Analysis}{9}{section.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.1}Nominal SAC Family}{9}{subsection.11.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.2}Robust SAC Family}{9}{subsection.11.2}\protected@file@percent }
+\newlabel{fig:learning}{{4a}{10}{Learning curves versus training budget}{figure.caption.11}{}}
+\newlabel{sub@fig:learning}{{a}{10}{Learning curves versus training budget}{figure.caption.11}{}}
+\newlabel{fig:degradation}{{4b}{10}{Relative perturbation effect $\Delta $}{figure.caption.11}{}}
+\newlabel{sub@fig:degradation}{{b}{10}{Relative perturbation effect $\Delta $}{figure.caption.11}{}}
+\newlabel{fig:variance}{{4c}{10}{Absolute and relative variability under randomized physics}{figure.caption.11}{}}
+\newlabel{sub@fig:variance}{{c}{10}{Absolute and relative variability under randomized physics}{figure.caption.11}{}}
+\newlabel{fig:survival}{{4d}{10}{Episode duration comparison}{figure.caption.11}{}}
+\newlabel{sub@fig:survival}{{d}{10}{Episode duration comparison}{figure.caption.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Core experimental results: performance curves, robustness degradation, variance profiles, and episode survival times across all models and evaluation conditions.}}{10}{figure.caption.11}\protected@file@percent }
+\newlabel{fig:all_results}{{4}{10}{Core experimental results: performance curves, robustness degradation, variance profiles, and episode survival times across all models and evaluation conditions}{figure.caption.11}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.3}Baseline vs Learned Controllers}{10}{subsection.11.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.4}Practical Selection Guidance}{10}{subsection.11.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {12}Reproducibility and Experimental Governance}{10}{section.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.1}Data Provenance}{10}{subsection.12.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.2}Evaluation Integrity Checks}{10}{subsection.12.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.3}Recommended Reporting Standard}{11}{subsection.12.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {13}Future Directions}{11}{section.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {14}Conclusion}{11}{section.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {15}Project Retrospective}{11}{section.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {A}Proofs and Notation}{11}{appendix.A}\protected@file@percent }
+\newlabel{app:proofs}{{A}{11}{Proofs and Notation}{appendix.A}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Proof of Residual Boundedness (Proposition 1)}{11}{subsection.A.1}\protected@file@percent }
+\newlabel{prop:boundedness}{{2}{11}{Residual boundedness}{proposition.2}{}}
+\bibcite{haarnoja2018sac}{1}
+\bibcite{lillicrap2015ddpg}{2}
+\bibcite{tobin2017domainrand}{3}
+\bibcite{peng2018sim2real}{4}
+\bibcite{pinto2017robust}{5}
+\bibcite{johannink2019residualrl}{6}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Summary of notation.}}{12}{table.caption.13}\protected@file@percent }
+\newlabel{tab:notation}{{7}{12}{Summary of notation}{table.caption.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Proof of Expected-Risk Interpretation (Proposition~\ref {prop:expected_risk})}{12}{subsection.A.2}\protected@file@percent }
+\bibcite{nematollahi2022sacgmm}{7}
+\bibcite{davchev2022rlfd}{8}
+\bibcite{nakhaei2024relce}{9}
+\bibcite{raffin2021sb3}{10}
+\bibcite{sutton2018rl}{11}
+\gdef \@abspage@last{13}

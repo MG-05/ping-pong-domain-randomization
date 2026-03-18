@@ -24,7 +24,7 @@ Domain Randomization and Residual Reinforcement Learning}
 Julia Novick\thanks{All authors contributed equally to this work.} \quad Jonathan Zhang\footnotemark[1] \quad Mayand Gulati\footnotemark[1] \quad Sagnik Biswas\footnotemark[1]\\[4pt]
 \normalsize UC Santa Barbara
 }
-\date{March 15, 2026}
+\date{March 18, 2026}
 
 \newtheorem{definition}{Definition}
 \newtheorem{assumption}{Assumption}
@@ -44,11 +44,11 @@ Julia Novick\thanks{All authors contributed equally to this work.} \quad Jonatha
 \maketitle
 
 \begin{abstract}
-We present a theory-oriented study of residual reinforcement learning for robotic ball bouncing under uncertain simulation physics. The controller combines a finite-state-machine and inverse-kinematics baseline (FSM+IK) with a learned Soft Actor-Critic (SAC) residual that provides bounded joint-space corrections. We compare nominal SAC training on fixed physics against robust SAC training with per-episode domain randomization over mass, friction, restitution, and dissipation parameters. Experiments use 20-episode deterministic evaluations at checkpoints (500k, 750k, 1M training steps) under nominal and randomized test physics in the Drake simulator. Cross-simulator MuJoCo evaluations are nominal-only (500 episodes). Nominal SAC achieves the strongest absolute performance in Drake (482 mean hits under nominal physics; 328 under randomized), while robust SAC exhibits better relative robustness trends at later checkpoints (+25.9\% at 750k and +48.5\% at 1M from nominal to randomized evaluation). In nominal MuJoCo sim-to-sim transfer, all policies degrade relative to Drake; the FSM baseline slightly outperforms robust SAC, while robust SAC remains close and clearly outperforms nominal SAC. We further analyze how the residual scale parameter governs the degree of RL correction injected on top of the baseline, finding that a narrow optimal range ($\alpha \approx 0.01$) yields peak hit counts while larger or smaller values degrade performance. Code and artifacts are public at \url{https://github.com/MG-05/ping-pong-domain-randomization}.
+We study residual reinforcement learning for robotic ball bouncing under simulation physics uncertainty. The controller combines a finite-state-machine and inverse-kinematics baseline (FSM+IK) with a learned Soft Actor-Critic (SAC) residual that provides bounded joint-space corrections. We compare nominal SAC training on fixed physics against robust SAC training with per-episode domain randomization over mass, friction, and restitution parameters. Experiments use 20-episode deterministic evaluations at checkpoints (500k, 750k, 1M training steps) under nominal and randomized test physics in the Drake simulator. Cross-simulator MuJoCo evaluations are nominal-only (500 episodes). Nominal SAC achieves the strongest absolute performance in Drake (482 mean hits under nominal physics; 328 under randomized), while robust SAC exhibits better relative robustness trends at later checkpoints (+25.9\% at 750k and +48.5\% at 1M from nominal to randomized evaluation). In nominal MuJoCo sim-to-sim transfer, all policies degrade relative to Drake; the FSM baseline slightly outperforms robust SAC, while robust SAC remains close and outperforms nominal SAC. We further analyze how the residual scale parameter governs the degree of RL correction injected on top of the baseline, finding that a narrow optimal range ($\alpha \approx 0.01$) yields peak hit counts while larger or smaller values degrade performance. Code and artifacts are public at \url{https://github.com/MG-05/ping-pong-domain-randomization}.
 \end{abstract}
 
 \section{Introduction}
-Dynamic ball-bouncing control on a robotic arm is a challenging benchmark because high-frequency contact events amplify small model errors. In this project, policy quality is not determined solely by nominal return; it is also determined by resilience under physically plausible perturbations. This motivates a robustness-first framing.
+Robot ball bouncing is hard because frequent contacts amplify small model errors. In this project, we evaluate policies not only by nominal return, but also by how well they handle physically plausible perturbations.
 
 Our system uses a hybrid architecture:
 \begin{itemize}[leftmargin=*,noitemsep]
@@ -56,7 +56,7 @@ Our system uses a hybrid architecture:
     \item a learned residual outer loop (SAC) for corrective adaptation.
 \end{itemize}
 
-This decomposition supports a rigorous question: when does residual learning improve performance, and how does domain randomization change generalization behavior?
+This setup lets us ask a direct question: when does residual learning help, and how does domain randomization change generalization?
 
 We evaluate three research questions:
 \begin{itemize}[leftmargin=*,noitemsep]
@@ -163,7 +163,7 @@ where $\mathcal{D}$ is the replay buffer of past transitions $(s,a,r,s')$, $Q_{\
 \]
 
 \subsection{Distributional Robustness Perspective}
-Let $\xi = (\text{ball mass}, \text{friction}, \text{restitution}, \text{dissipation}, \ldots)$ denote the vector of randomized physics parameters sampled from a distribution $\mathcal{P}_\Xi$ defined by the ranges in Table~\ref{tab:dr_ranges}. Nominal training optimizes expected return under a single fixed parameter vector $\xi_0$:
+Let $\xi = (\text{ball mass}, \text{friction}, \text{restitution}, \ldots)$ denote the vector of randomized physics parameters sampled from a distribution $\mathcal{P}_\Xi$ defined by the ranges in Table~\ref{tab:dr_ranges}. Nominal training optimizes expected return under a single fixed parameter vector $\xi_0$:
 \[
 \max_\pi \; \mathbb{E}_{\tau\sim P_{\xi_0},\pi}\!\left[R(\tau)\right],
 \]
@@ -219,13 +219,14 @@ The reward function at each control step combines four terms, designed to balanc
 \subsection{Training Configuration}
 From \texttt{src/train\_rl.py}, SAC is configured with:
 \begin{itemize}[leftmargin=*,noitemsep]
-    \item MLP policy with two hidden layers of 256 units each, $[256,256]$,
-    \item learning rate $3\times10^{-4}$,
-    \item batch size 256 transitions per gradient step,
-    \item replay buffer capacity $10^5$ transitions,
-    \item discount factor $\gamma=0.99$, target network Polyak rate $\tau=0.005$,
-    \item residual scale $\alpha = 0.5$, maximum residual $\delta = 0.15$ rad.
+    \item MLP policy with two hidden layers of 256 units each, $[256,256]$, a standard SAC size that was stable in our runs.
+    \item learning rate $3\times10^{-4}$, the usual SAC default, kept because optimization remained stable.
+    \item batch size 256 transitions per gradient step, a practical stability/compute trade-off for off-policy updates.
+    \item replay buffer capacity $10^5$ transitions, large enough for transition diversity without unnecessary memory cost.
+    \item discount factor $\gamma=0.99$, target network Polyak rate $\tau=0.005$, standard SAC settings for long-horizon credit assignment and stable target tracking.
+    \item residual scale $\alpha = 0.5$, maximum residual $\delta = 0.15$ rad, set to allow meaningful correction while keeping actions bounded.
 \end{itemize}
+We kept this hyperparameter set fixed across nominal and robust tracks so that differences come from domain randomization, not retuning.
 
 Two training tracks are used:
 \begin{itemize}[leftmargin=*,noitemsep]
@@ -234,7 +235,7 @@ Two training tracks are used:
 \end{itemize}
 
 \subsection{Domain Randomization Mechanism}
-\texttt{src/utils/randomization.py} samples parameters uniformly from the ranges in Table~\ref{tab:dr_ranges} and writes randomized model/scenario files before each robust episode. This means perturbations alter actual simulation artifacts (not merely internal coefficients) and better reflect realistic structural variation in contact dynamics.
+\texttt{src/utils/randomization.py} samples parameters uniformly from Table~\ref{tab:dr_ranges} and writes randomized model/scenario files before each robust episode. The floor model is also regenerated each episode to vary contact behavior. These perturbations change actual simulator artifacts, not just internal coefficients.
 
 \begin{table}[t]
 \centering
@@ -251,8 +252,6 @@ Ball restitution & 0.85 & 0.95 \\
 Paddle mass (kg) & 0.08 & 0.15 \\
 Paddle friction & 0.20 & 0.60 \\
 Paddle restitution & 0.80 & 1.00 \\
-Floor dissipation & 0.01 & 0.10 \\
-Floor restitution & 0.80 & 1.00 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -304,7 +303,7 @@ At runtime, one control iteration follows this sequence:
     \item clamp to joint bounds via $\Pi_{\mathcal{Q}}$ and send the resulting position command $q_t^{\mathrm{cmd}}$ to the iiwa joint-position controller;
     \item advance simulation by one control interval (10\,ms) and compute reward/termination.
 \end{enumerate}
-This decomposition isolates high-level tactical behavior (intercept/strike logic) from low-level adaptation (residual correction), making failures easier to diagnose than in monolithic policies.
+This split keeps intercept/strike logic in the FSM and local correction in SAC, which made failures easier to diagnose than in an end-to-end policy.
 
 \subsection{Why the Observation Space Is Structured This Way}
 The 20-D observation contains joint position/velocity ($q_{1:7}$, $\dot{q}_{1:7}$) and ball position/velocity ($p_b$, $v_b$). Conceptually, this is the minimum state needed to:
@@ -326,7 +325,7 @@ In this project, the combined reward appears effective for discovering high-hit 
 
 \subsection{Contact Event Debouncing and Measurement Semantics}
 \label{sec:contact_debounce}
-Hit counting uses force-thresholded contact detection: a hit is registered when the ball contact-force magnitude exceeds a threshold ($0.05$\,N) \emph{and} the ball is above a minimum height ($0.20$\,m), with a cooldown of 10 control steps ($100$\,ms) between consecutive detections. This matters for interpretation: ``hits'' are not simply every physics-step contact, but filtered events intended to approximate meaningful paddle-ball interactions, filtering out other ball contacts such as floor bounces or incidental collisions. Therefore, reported hit-rate differences can reflect both policy behavior and event-definition sensitivity, a point we include in validity threats.
+Hit counting uses force-thresholded contact detection: a hit is registered when the ball contact-force magnitude exceeds $0.05$\,N \emph{and} the ball is above $0.20$\,m, with a cooldown of 10 control steps ($100$\,ms) between detections. So ``hits'' are filtered events, not every physics-step contact, and they exclude many floor bounces or incidental collisions. Reported hit-rate differences therefore reflect both policy behavior and this event definition.
 
 \subsection{Training Infrastructure and Reproducibility}
 The training loop uses a standard set of RL engineering controls:
@@ -339,7 +338,7 @@ The training loop uses a standard set of RL engineering controls:
 These controls enable post-hoc analysis of learning dynamics such as the 750k performance dip.
 
 \subsection{Domain Randomization as Scenario Generation}
-Randomization is implemented by sampling parameters and writing randomized model/scenario files used at environment reset. This means perturbations alter actual simulation artifacts (not merely internal coefficients) and better reflect realistic structural variation in contact dynamics.
+Randomization is implemented by sampling parameters and writing randomized model/scenario files at environment reset, including a regenerated floor model for episode-to-episode contact variation. As above, these perturbations change simulator artifacts, not just internal coefficients.
 
 \subsection{FSM Controller Architecture}
 \label{sec:fsm_architecture}
@@ -404,7 +403,7 @@ The predicted intercept must lie within the reachable workspace: $x \in [0.40, 1
 \label{fig:fsm_diagram}
 \end{figure}
 
-This FSM contributes three structural priors that benefit residual learning: a \emph{trajectory feasibility prior} (IK-generated targets keep the arm in physically meaningful postures), a \emph{temporal prior} (strike windows are aligned with predicted intercept timing), and a \emph{contact prior} (the controller encodes an intended paddle-ball contact geometry). As a result, residual SAC learns \emph{how to improve} an already competent policy rather than learning ball bouncing from scratch.
+This FSM gives residual learning three useful priors: feasible trajectories from IK targets, strike timing aligned with predicted intercepts, and intended paddle-ball contact geometry. In practice, SAC then learns local improvements to a competent controller rather than the whole task from scratch.
 
 \subsection{Inverse Kinematics Solver}
 The IK stage within PLAN uses Drake's optimization-based \texttt{InverseKinematics} solver to convert Cartesian strike targets into feasible joint configurations for the 7-DOF KUKA iiwa arm. For each strike, the planner solves IK sequentially for three waypoints: prehit (approach pose), hit (contact pose), and follow-through (exit pose), seeding each solve from the previous solution.
@@ -424,7 +423,10 @@ Evaluation uses deterministic action selection (taking the mean of the policy's 
 However, deterministic evaluation also creates a limitation: under nominal fixed physics, some metrics become near-deterministic (e.g., near-zero standard deviation), reducing visibility into variability. We therefore include randomized evaluation and variance metrics to recover uncertainty information.
 
 \subsection{MuJoCo Sim-to-Sim Transfer}
-To test cross-simulator generalization, we evaluate all policies in a MuJoCo reimplementation of the ball-bouncing environment (\texttt{mujoco\_transfer/}). Table~\ref{tab:mujoco_transfer} reports 500-episode evaluations under nominal MuJoCo physics with the improved SAC injection protocol (residual scale $\alpha = 0.01$; see Section~\ref{sec:residual_scale}). Performance drops substantially across the board compared to Drake (Table~\ref{tab:main_results}), confirming that sim-to-sim transfer is nontrivial even when the nominal task geometry is preserved. In nominal MuJoCo physics, the FSM baseline achieves 25.5 mean hits with 34\% survival, while robust SAC achieves 24.3 mean hits with 29\% survival---closely matching the baseline and substantially outperforming nominal SAC (18.6 mean hits, 8\% survival).
+To test cross-simulator generalization, we evaluate all policies in a MuJoCo reimplementation of the ball-bouncing environment (\texttt{mujoco\_transfer/}). Table~\ref{tab:mujoco_transfer} reports 500-episode evaluations under nominal MuJoCo physics with residual scale $\alpha = 0.01$ (Section~\ref{sec:residual_scale}). All models drop relative to Drake (Table~\ref{tab:main_results}), showing that sim-to-sim transfer is difficult even when nominal geometry is preserved. Under nominal MuJoCo physics, the FSM baseline achieves 25.5 mean hits with 34\% survival, robust SAC reaches 24.3 mean hits with 29\% survival, and nominal SAC reaches 18.6 mean hits with 8\% survival.
+
+\textbf{Question.} How well do Drake-trained policies transfer to a fixed nominal MuJoCo test environment?
+\textbf{Design.} We evaluate all models under the same MuJoCo dynamics and the same residual scale, with 500 episodes per model, to isolate transfer effects while reducing estimator variance.
 
 Figure~\ref{fig:mujoco_results} shows the corresponding nominal MuJoCo hit comparison across models.
 
@@ -454,14 +456,17 @@ Robust SAC & 24.3 & 12.7 & 29\% \\
 \section{Residual Scale Analysis}
 \label{sec:residual_scale}
 
-The residual scale parameter $\alpha$ controls how much of the learned SAC correction is injected on top of the FSM+IK baseline. At $\alpha = 0$, the system reduces to the pure FSM baseline with no RL contribution. As $\alpha$ increases, the RL agent exerts progressively larger joint-position corrections. This section analyzes how $\alpha$ affects performance in MuJoCo sim-to-sim transfer, revealing a narrow optimal range.
+The residual scale parameter $\alpha$ controls how much of the learned SAC correction is injected on top of the FSM+IK baseline. At $\alpha = 0$, the system is pure FSM with no RL contribution. As $\alpha$ increases, the RL agent applies larger joint-position corrections. This section tests how $\alpha$ affects MuJoCo transfer performance.
 
 \subsection{Sweep Protocol}
 We swept $\alpha$ over 15 values from $0.0$ to $0.014$ using the robust SAC policy in MuJoCo with 20 episodes per scale value (Table~\ref{tab:residual_sweep}). The sweep was conducted under nominal MuJoCo physics to isolate the effect of residual injection magnitude from physics perturbation.
 
+\textbf{Question.} What residual-injection magnitude gives the best MuJoCo transfer performance for robust SAC?
+\textbf{Design.} We use a dense low-range sweep around zero, fixed nominal MuJoCo physics, and equal episode counts per scale to isolate the role of $\alpha$.
+
 \begin{table}[t]
 \centering
-\caption{Residual scale sweep: robust SAC in MuJoCo under nominal physics (20 episodes per scale). The optimal residual scale is $\alpha = 0.01$, substantially smaller than the training-time value of $\alpha = 0.5$.}
+\caption{Residual scale sweep: robust SAC in MuJoCo under nominal physics (20 episodes per scale). The optimal residual scale is $\alpha = 0.01$, much smaller than the training-time value of $\alpha = 0.5$.}
 \label{tab:residual_sweep}
 \small
 \begin{tabular}{cccc}
@@ -482,14 +487,14 @@ $\alpha$ & Mean Hits & Std Hits & Survival \\
 \end{table}
 
 \subsection{Key Findings}
-\textbf{Optimal scale is narrow.} Peak performance occurs at $\alpha = 0.01$, achieving 30.4 mean hits---a 37.6\% improvement over the pure FSM baseline ($\alpha = 0$, 22.1 hits). Performance degrades sharply outside the $[0.007, 0.010]$ band (Figure~\ref{fig:residual_sweep}).
+\textbf{Optimal scale is narrow.} Peak performance occurs at $\alpha = 0.01$, with 30.4 mean hits, a 37.6\% improvement over pure FSM ($\alpha = 0$, 22.1 hits). Performance drops outside the $[0.007, 0.010]$ band (Figure~\ref{fig:residual_sweep}).
 
-\textbf{Variance reduction.} Increasing $\alpha$ within the optimal range also reduces hit-count variability: standard deviation drops from 15.3 (at $\alpha = 0$) to 10.6 (at $\alpha = 0.01$), suggesting the residual correction stabilizes contact dynamics.
+\textbf{Variance reduction.} Within the optimal range, standard deviation drops from 15.3 (at $\alpha = 0$) to 10.6 (at $\alpha = 0.01$), suggesting more stable contact behavior.
 
 \textbf{Transfer gap explains the small optimal scale.}
-The SAC policy was trained in Drake with $\alpha = 0.5$, but the optimal deployment scale in MuJoCo is $\alpha = 0.01$---a 50$\times$ reduction. This extreme attenuation reflects the sim-to-sim mismatch: corrections learned under Drake's contact model must be heavily dampened to avoid destabilizing the system under MuJoCo's different physics. At large $\alpha$ values, the RL corrections---well-calibrated for Drake---become counterproductive in MuJoCo, actively degrading baseline FSM performance.
+The SAC policy was trained in Drake with $\alpha = 0.5$, but in MuJoCo the best value is $\alpha = 0.01$ (50$\times$ smaller). This is consistent with sim-to-sim mismatch: corrections tuned for Drake contacts need strong damping in MuJoCo. At larger $\alpha$, RL corrections degrade baseline FSM performance.
 
-\textbf{Practical implication.} When deploying a residual RL policy in a new simulator or on real hardware, the residual scale should be treated as a tunable transfer parameter rather than fixed at its training value. A simple grid search over $\alpha$ (as done here) provides an effective calibration mechanism.
+\textbf{Practical implication.} For new simulators or real hardware, residual scale should be tuned at deployment time rather than copied from training. A small grid search over $\alpha$ worked well here.
 
 \begin{figure}[t]
     \centering
@@ -501,6 +506,9 @@ The SAC policy was trained in Drake with $\alpha = 0.5$, but the optimal deploym
 \section{Results}
 \subsection{FSM Baseline Robustness}
 The baseline controller is strong and should not be treated as a trivial reference (Table~\ref{tab:fsm_baseline}).
+
+\textbf{Question addressed.} How robust is the hand-engineered FSM+IK baseline to increasing initial-condition perturbations?
+\textbf{Design justification.} Reporting deterministic, noisy ($\pm$4 cm), and stress ($\pm$8 cm) start conditions provides a controlled perturbation ladder that separates nominal competence from robustness under progressively harder initialization uncertainty.
 
 \begin{table}[t]
 \centering
@@ -519,7 +527,7 @@ Stress init ($\pm$8 cm) & $104.3\pm54.9$ & 23/50 (46\%) \\
 \end{table}
 
 \subsection{Main Quantitative Comparison}
-Table~\ref{tab:main_results} summarizes the full evaluation matrix. Four key findings emerge:
+Table~\ref{tab:main_results} summarizes the full evaluation matrix. We highlight four results:
 
 \begin{table*}[t]
 \centering
@@ -554,13 +562,13 @@ Robust SAC 1M & Randomized & 112.9 & 30.9 & 181 & 2.7 & $+48.5\%$ \\
 Nominal SAC at 1M steps achieves the strongest absolute hit count in Drake across all models and conditions (Table~\ref{tab:main_results}), reaching 482 mean hits under nominal physics---a $3\times$ improvement over the FSM baseline (159 hits).
 
 \textbf{Finding 2 (Relative robustness):}
-Robust SAC becomes positive in $\Delta$ at later checkpoints: $+25.9\%$ at 750k and $+48.5\%$ at 1M (Figure~\ref{fig:degradation}), meaning it performs \emph{better} under randomized physics than nominal---a signature of domain-randomization training successfully producing physics-invariant corrections.
+Robust SAC becomes positive in $\Delta$ at later checkpoints: $+25.9\%$ at 750k and $+48.5\%$ at 1M (Figure~\ref{fig:degradation}), meaning it performs \emph{better} under randomized physics than nominal.
 
 \textbf{Finding 3 (Learning dynamics):}
 Both tracks exhibit a 750k dip and 1M rebound (Figure~\ref{fig:learning}), consistent with the value-function reorganization discussed in Section~3.5.
 
 \textbf{Finding 4 (Consistency):}
-Nominal SAC 1M has high randomized variance ($\sigma=106$); robust SAC 1M is substantially lower ($\sigma=30.9$), as shown in Figure~\ref{fig:variance}. This consistency advantage of domain randomization is a key practical benefit.
+Nominal SAC 1M has high randomized variance ($\sigma=106$); robust SAC 1M is lower ($\sigma=30.9$), as shown in Figure~\ref{fig:variance}. This is a practical benefit of domain randomization.
 
 \subsection{Extended Metric Analysis}
 To separate rally quantity from episode duration, we compute mean hit throughput
@@ -590,7 +598,7 @@ Table~\ref{tab:throughput} clarifies a subtle behavior: robust policies can exhi
 
 \subsection{Checkpoint-by-Checkpoint Interpretation}
 \textbf{500k stage.}
-Nominal 500k is already competitive with baseline in throughput, while robust 500k remains conservative in absolute hit count. This is consistent with robust training paying an early tax for invariance learning.
+Nominal 500k is already competitive with baseline in throughput, while robust 500k remains conservative in absolute hit count. This matches the usual early trade-off in robust training.
 
 \textbf{750k stage.}
 Both nominal and robust trajectories dip in nominal evaluation. Robust 750k is notable because randomized performance exceeds nominal performance ($+25.9\%$), suggesting adaptation to the randomization distribution even before absolute performance matures.
@@ -653,7 +661,7 @@ Robust SAC improves relative robustness but remains below nominal SAC in peak ab
 We increased the training budget to 1M and retained intermediate checkpoint evaluation; used wide randomization ranges over contact and inertial parameters; and compared both training types under both evaluation conditions.
 
 \textbf{Interpretation.}
-Domain-randomized training appears to allocate capacity toward invariance across physics regimes, which may delay convergence to highly specialized nominal strategies.
+Domain-randomized training appears to spend capacity on cross-physics invariance, which can delay convergence to highly specialized nominal strategies.
 
 \section{Threats to Validity}
 \begin{itemize}[leftmargin=*,noitemsep]
@@ -707,7 +715,7 @@ The quantitative values in this paper are taken from repository artifacts:
 This provenance path makes each table and plot auditable.
 
 \subsection{Evaluation Integrity Checks}
-A rigorous evaluation should explicitly check:
+At minimum, evaluation should check:
 \begin{itemize}[leftmargin=*,noitemsep]
     \item deterministic-evaluation flag consistency across runs,
     \item checkpoint naming and step-count alignment,
@@ -736,15 +744,27 @@ For stronger final claims, future iterations should report:
 \end{itemize}
 
 \section{Conclusion}
-This project demonstrates a rigorous hybrid-control study: residual SAC significantly improves baseline performance in Drake, with nominal SAC achieving $3\times$ the FSM baseline hit count at 1M training steps.
+This project studies a hybrid controller (FSM+IK baseline plus SAC residual). In Drake, residual learning improved over the baseline, with nominal SAC at 1M reaching 482 mean hits, about $3\times$ the FSM baseline (159).
 
-\textbf{Domain randomization helps.} The robust SAC policy, trained with per-episode physics randomization, achieves positive perturbation effects ($+48.5\%$ at 1M), meaning it actually \emph{benefits} from randomized test conditions rather than degrading. This is in line with the theoretical expectation that domain-randomized training produces policies whose corrections generalize across the physics distribution rather than overfitting to a single simulator configuration.
+\textbf{Domain randomization helps.} The robust SAC policy, trained with per-episode physics randomization, reaches positive perturbation effects ($+25.9\%$ at 750k and $+48.5\%$ at 1M). In other words, it performs better under randomized evaluation than under nominal evaluation at later checkpoints.
 
-\textbf{Consistency advantage.} Beyond mean performance, domain randomization dramatically reduces variance: robust SAC 1M exhibits $\sigma = 30.9$ under randomized physics compared to $\sigma = 106$ for nominal SAC 1M---nearly $3.5\times$ lower variance. For deployment scenarios where unpredictable performance swings are unacceptable, this consistency is arguably more important than peak hit count.
+\textbf{Consistency advantage.} Under randomized physics, robust SAC 1M has much lower variance than nominal SAC 1M ($\sigma = 30.9$ vs $\sigma = 106$), about $3.5\times$ lower.
 
-\textbf{Residual scale as a transfer knob.} The residual scale analysis (Section~\ref{sec:residual_scale}) reveals that the degree of RL injection must be carefully calibrated when transferring between simulators. In MuJoCo, the optimal scale ($\alpha = 0.01$) is $50\times$ smaller than the training value ($\alpha = 0.5$), and within this narrow optimal range, the RL residual improves FSM baseline performance by 37.6\%. This finding underscores that residual RL policies should not be deployed at their training-time injection magnitude in new environments; instead, the residual scale should be treated as a tunable transfer parameter.
+\textbf{Residual scale in transfer.} The residual scale analysis (Section~\ref{sec:residual_scale}) shows that RL injection must be recalibrated after transfer. In MuJoCo, the best scale is $\alpha = 0.01$, which is $50\times$ smaller than the training value ($\alpha = 0.5$). At this setting, the residual policy improves over FSM by 37.6\%.
 
-The main scientific outcome is a data-backed trade-off between nominal specialization and perturbation robustness, supported by quantitative evidence from two simulators (Drake and MuJoCo), a residual scale analysis, and a comprehensive evaluation protocol.
+\textbf{Future reward shaping for apex quality.} A next step is to increase the apex-height reward weight. Right now, the policy can gain reward from many short low-height taps (few-centimeter hits) within 20 seconds instead of fewer higher bounces that better match the target apex.
+
+Overall, the main result is a clear trade-off: nominal training gives higher peak hits, while randomized training gives better robustness and lower variance.
+
+\section{Project Retrospective}
+\textbf{Biggest challenge.}
+The biggest challenge was understanding why MuJoCo transfer underperformed. At first we thought simulator mismatch was the only issue, but debugging showed a second issue: the apex-height reward weight was too small. The policy then preferred many small contacts instead of higher-quality bounces, and that behavior did not pair well with PID tuning built around the FSM's larger-hit pattern. Learning MuJoCo itself was also a challenge because none of us had used it before.
+
+\textbf{Most pleased with.}
+We are most pleased with the hybrid controller result in Drake. Adding a residual RL policy on top of IK/FSM improved performance while keeping the structure and reliability of the baseline.
+
+\textbf{What we would do differently.}
+Next time we would do stricter diagnostics in Drake before transfer. In particular, we would test reward sensitivity (especially apex-height weighting), inspect hit-amplitude distributions, and check controller-policy interaction earlier. That would likely have exposed the reward-design issue before the MuJoCo debugging phase.
 
 \section*{Code Availability and Reproducibility}
 All code, trained models, and evaluation artifacts are publicly available at

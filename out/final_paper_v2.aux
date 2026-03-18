@@ -32,15 +32,15 @@
 \newlabel{sec:reward}{{4.3}{4}{Reward Construction}{subsection.4.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Training Configuration}{4}{subsection.4.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Domain Randomization Mechanism}{4}{subsection.4.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5}Experimental Protocol}{4}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Hypotheses}{4}{subsection.5.1}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Domain randomization ranges used in robust training.}}{4}{table.caption.2}\protected@file@percent }
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
 \newlabel{tab:dr_ranges}{{1}{4}{Domain randomization ranges used in robust training}{table.caption.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Experimental Protocol}{4}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Hypotheses}{4}{subsection.5.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Evaluation Procedure}{4}{subsection.5.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Metrics}{4}{subsection.5.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}Implementation Walkthrough}{4}{section.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}End-to-End Dataflow}{4}{subsection.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Implementation Walkthrough}{5}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}End-to-End Dataflow}{5}{subsection.6.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Why the Observation Space Is Structured This Way}{5}{subsection.6.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Reward Design Trade-offs}{5}{subsection.6.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Contact Event Debouncing and Measurement Semantics}{5}{subsection.6.4}\protected@file@percent }
@@ -58,10 +58,10 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.10}MuJoCo Sim-to-Sim Transfer}{7}{subsection.6.10}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {7}Residual Scale Analysis}{7}{section.7}\protected@file@percent }
 \newlabel{sec:residual_scale}{{7}{7}{Residual Scale Analysis}{section.7}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces MuJoCo sim-to-sim transfer under nominal MuJoCo physics: mean hits with $\pm $std error bars and survival percentages (500 episodes each), derived from the nominal MuJoCo evaluation dataset used for Table~\ref {tab:mujoco_transfer}.}}{7}{figure.caption.5}\protected@file@percent }
-\newlabel{fig:mujoco_results}{{2}{7}{MuJoCo sim-to-sim transfer under nominal MuJoCo physics: mean hits with $\pm $std error bars and survival percentages (500 episodes each), derived from the nominal MuJoCo evaluation dataset used for Table~\ref {tab:mujoco_transfer}}{figure.caption.5}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Residual scale sweep: robust SAC in MuJoCo under nominal physics (20 episodes per scale). The optimal residual scale is $\alpha = 0.01$, substantially smaller than the training-time value of $\alpha = 0.5$.}}{7}{table.caption.6}\protected@file@percent }
-\newlabel{tab:residual_sweep}{{3}{7}{Residual scale sweep: robust SAC in MuJoCo under nominal physics (20 episodes per scale). The optimal residual scale is $\alpha = 0.01$, substantially smaller than the training-time value of $\alpha = 0.5$}{table.caption.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces MuJoCo sim-to-sim transfer: hit count comparison across models under nominal physics.}}{7}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:mujoco_results}{{2}{7}{MuJoCo sim-to-sim transfer: hit count comparison across models under nominal physics}{figure.caption.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Residual scale sweep: robust SAC in MuJoCo under nominal physics (20 episodes per scale). The optimal residual scale is $\alpha = 0.01$, much smaller than the training-time value of $\alpha = 0.5$.}}{7}{table.caption.6}\protected@file@percent }
+\newlabel{tab:residual_sweep}{{3}{7}{Residual scale sweep: robust SAC in MuJoCo under nominal physics (20 episodes per scale). The optimal residual scale is $\alpha = 0.01$, much smaller than the training-time value of $\alpha = 0.5$}{table.caption.6}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Sweep Protocol}{7}{subsection.7.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Key Findings}{7}{subsection.7.2}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Residual scale sweep in MuJoCo: mean hit count (with standard deviation bands) as a function of residual scale $\alpha $. Peak performance at $\alpha = 0.01$ demonstrates the sensitivity of sim-to-sim transfer to the injection magnitude.}}{8}{figure.caption.7}\protected@file@percent }
@@ -101,6 +101,7 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {12.3}Recommended Reporting Standard}{11}{subsection.12.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {13}Future Directions}{11}{section.13}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {14}Conclusion}{11}{section.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {15}Project Retrospective}{11}{section.15}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {A}Proofs and Notation}{11}{appendix.A}\protected@file@percent }
 \newlabel{app:proofs}{{A}{11}{Proofs and Notation}{appendix.A}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Proof of Residual Boundedness (Proposition 1)}{11}{subsection.A.1}\protected@file@percent }
@@ -111,10 +112,10 @@
 \bibcite{peng2018sim2real}{4}
 \bibcite{pinto2017robust}{5}
 \bibcite{johannink2019residualrl}{6}
-\bibcite{nematollahi2022sacgmm}{7}
 \@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Summary of notation.}}{12}{table.caption.13}\protected@file@percent }
 \newlabel{tab:notation}{{7}{12}{Summary of notation}{table.caption.13}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Proof of Expected-Risk Interpretation (Proposition~\ref {prop:expected_risk})}{12}{subsection.A.2}\protected@file@percent }
+\bibcite{nematollahi2022sacgmm}{7}
 \bibcite{davchev2022rlfd}{8}
 \bibcite{nakhaei2024relce}{9}
 \bibcite{raffin2021sb3}{10}
