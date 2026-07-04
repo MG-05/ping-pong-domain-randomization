@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 600" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1E293B"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1D4ED8"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#059669"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="980" height="600" fill="white"/>
+  <text x="490" y="32" text-anchor="middle" font-size="19" font-weight="bold" fill="#1E293B">Residual RL Architecture: FSM+IK Baseline + SAC Correction under Domain Randomization</text>
+
+  <!-- Feedback loop (drawn first, stays above all boxes) -->
+  <path d="M 860 195 C 860 70 105 70 105 225" stroke="#1D4ED8" stroke-width="2" fill="none" marker-end="url(#arrowBlue)"/>
+  <text x="483" y="88" text-anchor="middle" font-size="12" fill="#1D4ED8">robot + ball state feedback (every 10 ms)</text>
+
+  <!-- Observation -->
+  <rect x="30" y="225" width="150" height="110" rx="10" fill="#F1F5F9" stroke="#64748B" stroke-width="2"/>
+  <text x="105" y="253" text-anchor="middle" font-size="14" font-weight="bold" fill="#1E293B">Observation</text>
+  <text x="105" y="271" text-anchor="middle" font-size="12" fill="#334155">(20-D)</text>
+  <text x="105" y="293" text-anchor="middle" font-size="12" fill="#334155">joint pos/vel (14)</text>
+  <text x="105" y="311" text-anchor="middle" font-size="12" fill="#334155">ball pos/vel (6)</text>
+
+  <!-- FSM+IK baseline -->
+  <rect x="250" y="120" width="220" height="120" rx="10" fill="#EEF2FF" stroke="#64748B" stroke-width="2"/>
+  <text x="360" y="146" text-anchor="middle" font-size="14" font-weight="bold" fill="#1E293B">FSM + IK Baseline</text>
+  <text x="360" y="168" text-anchor="middle" font-size="11.5" fill="#334155">WAIT &#8594; PLAN &#8594; PREHIT &#8594;</text>
+  <text x="360" y="185" text-anchor="middle" font-size="11.5" fill="#334155">STRIKE &#8594; FOLLOW (&#8594; RECOVER)</text>
+  <text x="360" y="206" text-anchor="middle" font-size="11.5" fill="#334155">ballistic intercept + Drake IK</text>
+  <text x="360" y="228" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#475569">baseline command q_base &#8712; R&#8311;</text>
+
+  <!-- SAC residual -->
+  <rect x="250" y="285" width="220" height="120" rx="10" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+  <text x="360" y="311" text-anchor="middle" font-size="14" font-weight="bold" fill="#5B21B6">SAC Residual Policy</text>
+  <text x="360" y="333" text-anchor="middle" font-size="11.5" fill="#334155">MLP [256, 256], entropy-regularized</text>
+  <text x="360" y="351" text-anchor="middle" font-size="11.5" fill="#334155">a &#8712; [&#8722;1, 1]&#8311; (one per iiwa joint)</text>
+  <text x="360" y="375" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#5B21B6">&#916;q = &#945; &#183; &#948; &#183; clip(a)</text>
+  <text x="360" y="394" text-anchor="middle" font-size="11" fill="#64748B">&#945; = 0.5 (train), &#948; = 0.15 rad</text>
+
+  <!-- Sum -->
+  <circle cx="540" cy="262" r="20" fill="white" stroke="#1E293B" stroke-width="2"/>
+  <text x="540" y="269" text-anchor="middle" font-size="18" fill="#1E293B">+</text>
+
+  <!-- Joint-limit projection -->
+  <rect x="590" y="227" width="130" height="76" rx="10" fill="#F1F5F9" stroke="#64748B" stroke-width="2"/>
+  <text x="655" y="252" text-anchor="middle" font-size="13" font-weight="bold" fill="#1E293B">Joint-limit</text>
+  <text x="655" y="270" text-anchor="middle" font-size="13" font-weight="bold" fill="#1E293B">projection &#928;</text>
+  <text x="655" y="292" text-anchor="middle" font-size="11" fill="#64748B">q_cmd &#8712; Q</text>
+
+  <!-- Robot / simulator -->
+  <rect x="770" y="195" width="180" height="135" rx="10" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="2.5"/>
+  <text x="860" y="222" text-anchor="middle" font-size="14" font-weight="bold" fill="#1E3A8A">KUKA iiwa + paddle</text>
+  <text x="860" y="244" text-anchor="middle" font-size="12" fill="#334155">Drake, 1 ms physics</text>
+  <text x="860" y="262" text-anchor="middle" font-size="12" fill="#334155">PD joint-position control</text>
+  <text x="860" y="286" text-anchor="middle" font-size="12" fill="#334155">reward: +5 hit, +0.01 alive,</text>
+  <text x="860" y="304" text-anchor="middle" font-size="12" fill="#334155">apex bonus, &#8722;5 drop</text>
+
+  <!-- Domain randomization -->
+  <rect x="590" y="460" width="360" height="110" rx="10" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+  <text x="770" y="486" text-anchor="middle" font-size="13.5" font-weight="bold" fill="#065F46">Per-Episode Domain Randomization (robust track)</text>
+  <text x="770" y="510" text-anchor="middle" font-size="11.5" fill="#334155">ball mass 2.0&#8211;3.5 g &#183; friction 0.15&#8211;0.30 &#183; restitution 0.85&#8211;0.95</text>
+  <text x="770" y="528" text-anchor="middle" font-size="11.5" fill="#334155">paddle mass 80&#8211;150 g &#183; friction 0.20&#8211;0.60 &#183; restitution 0.80&#8211;1.00</text>
+  <text x="770" y="550" text-anchor="middle" font-size="11" fill="#64748B">regenerated model/scenario files + floor model each episode</text>
+
+  <!-- Sim-to-sim transfer -->
+  <rect x="30" y="460" width="440" height="110" rx="10" fill="#F8FAFC" stroke="#94A3B8" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="250" y="488" text-anchor="middle" font-size="13.5" font-weight="bold" fill="#1E293B">Sim-to-Sim Transfer Evaluation</text>
+  <text x="250" y="514" text-anchor="middle" font-size="12" fill="#334155">Drake-trained policies &#8594; MuJoCo re-implementation (500 episodes)</text>
+  <text x="250" y="536" text-anchor="middle" font-size="12" fill="#334155">residual scale re-tuned at deployment: &#945; = 0.01 (50&#215; smaller)</text>
+
+  <!-- Arrows -->
+  <path d="M 180 255 L 250 190" stroke="#1E293B" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 180 305 L 250 345" stroke="#1E293B" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 470 180 C 510 180 524 224 531 244" stroke="#1E293B" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 470 345 C 510 345 524 300 531 280" stroke="#1E293B" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 560 262 L 590 262" stroke="#1E293B" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 720 262 L 770 262" stroke="#1E293B" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 860 460 L 860 336" stroke="#059669" stroke-width="2" fill="none" marker-end="url(#arrowGreen)"/>
+  <text x="872" y="402" text-anchor="start" font-size="11.5" fill="#065F46">physics &#958; ~ P</text>
+</svg>

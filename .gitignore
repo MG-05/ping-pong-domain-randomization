@@ -213,3 +213,11 @@ logs/
 .DS_Store
 **/.DS_Store
 *.pdf
+
+# LaTeX build artifacts (keep only the .tex source)
+*.aux
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+out/
